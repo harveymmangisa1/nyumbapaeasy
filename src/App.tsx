@@ -10,14 +10,20 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import AddPropertyPage from './pages/AddPropertyPage';
 import ProfilePage from './pages/ProfilePage';
-import { UserProvider } from './context/UserContext'; // UserProvider now uses Firebase
+import { UserProvider } from './context/UserContext';
 import { PropertyProvider } from './context/PropertyContext';
-import EditPropertyPage from './pages/EditPropertyPage';
+import EditPropertyPage from './pages/EditPropertyPage.jsx';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
-import FAQPage from './pages/FAQPage';
+import FaqPage from './pages/FaqPage';
 import UsePolicyPage from './pages/UsePolicyPage';
-
+import AdminVerificationPage from './pages/AdminVerificationPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import AnalyticsPage from './pages/AnalyticsPage';
+// Policy pages
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
+import CookiePage from './pages/CookiePage';
 
 function App() {
   return (
@@ -37,10 +43,17 @@ function App() {
                 <Route path="/add-property" element={<AddPropertyPage />} /> {/* Protected route logic inside component */}
                 <Route path="/edit-property/:id" element={<EditPropertyPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+                <Route path="/admin/verification" element={<AdminVerificationPage />} />
+                <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/contact" element={<ContactPage />} />
-                <Route path="/faq" element={<FAQPage />} />
+                <Route path="/faq" element={<FaqPage />} />
                 <Route path="/use-policy" element={<UsePolicyPage />} />
+                {/* Policy pages */}
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/cookies" element={<CookiePage />} />
               </Routes>
             </main>
             <Footer /> {/* Can access user context */}

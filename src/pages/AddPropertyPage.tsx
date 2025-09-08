@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { Camera, XCircle, Loader2, Trash2 } from 'lucide-react';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { app, db } from '../firebaseConfig';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { useProperties } from '../context/PropertyContext';
+import { Camera, XCircle, Loader2, Trash2, AlertCircle, ShieldAlert } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 const districtsWithAreasAndSectors: Record<string, Record<string, string[]>> = {
   Lilongwe: {
@@ -37,36 +36,25 @@ const districtsWithAreasAndSectors: Record<string, Record<string, string[]>> = {
 
 const AddPropertyPage: React.FC = () => {
   const { user, isAuthenticated } = useUser();
+  const { addProperty } = useProperties();
   const navigate = useNavigate();
-  const storage = getStorage(app);
-
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
+  const [location, setLocation] = useState('');
   const [district, setDistrict] = useState('');
-  const [areaName, setAreaName] = useState('');
-  const [sector, setSector] = useState('');
-  const [propertyType, setPropertyType] = useState<'apartment' | 'house' | 'room' | 'commercial'>('house');
-  const [bedrooms, setBedrooms] = useState('');
-  const [bathrooms, setBathrooms] = useState('');
-  const [propertySize, setPropertySize] = useState('');
+  const [type, setType] = useState('apartment');
+  const [bedrooms, setBedrooms] = useState(1);
+  const [bathrooms, setBathrooms] = useState(1);
+  const [area, setArea] = useState('');
   const [isSelfContained, setIsSelfContained] = useState(false);
-  const [amenities, setAmenities] = useState<string[]>([]);
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [newAmenity, setNewAmenity] = useState('');
   const [images, setImages] = useState<string[]>([]);
-  const [imageRefs, setImageRefs] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [isUploadingImages, setIsUploadingImages] = useState(false);
-  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
-  const [paymentCycle, setPaymentCycle] = useState<'monthly' | '2 months' | '3 months'>('monthly');
-  const [listingType, setListingType] = useState<'rent' | 'sale'>('rent');
-  const [fencingType, setFencingType] = useState<'brick fenced' | 'glass fenced' | 'wood pallets' | 'incomplete fencing' | 'none'>('none');
-  const [propertyCategory, setPropertyCategory] = useState<'standalone' | 'semi-detached' | 'townhouses' | 'bedsitter'>('standalone');
-  const [isAvailable, setIsAvailable] = useState(true);
-  const [hasElectricity, setHasElectricity] = useState(false);
-  const [hasWater, setHasWater] = useState(false);
-  const [googleMapLink, setGoogleMapLink] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [verificationCheck, setVerificationCheck] = useState<{ canList: boolean; message: string | null } | null>(null);
 
   useEffect(() => {
     document.title = 'Add New Property | NyumbaPaeasy';
@@ -80,144 +68,235 @@ const AddPropertyPage: React.FC = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
+  // Check user verification status on component mount
+  useEffect(() => {
+    const checkVerificationStatus = async () => {
+      if (user && (user.role === 'landlord' || user.role === 'admin')) {
+        // In a real implementation, you would call the verification service here
+        // For now, we'll set a default that allows listing
+        setVerificationCheck({ canList: true, message: null });
+      }
+    };
+    
+    checkVerificationStatus();
+  }, [user]);
+
   const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedDistrict = e.target.value;
     setDistrict(selectedDistrict);
-    setAreaName('');
-    setSector('');
-  };
-
-  const handleAreaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedArea = e.target.value;
-    setAreaName(selectedArea);
-    setSector('');
+    setArea('');
   };
 
   const handleAddAmenity = () => {
-    if (newAmenity.trim() && !amenities.includes(newAmenity.trim())) {
-      setAmenities([...amenities, newAmenity.trim()]);
+    if (newAmenity.trim() && !selectedAmenities.includes(newAmenity.trim())) {
+      setSelectedAmenities([...selectedAmenities, newAmenity.trim()]);
       setNewAmenity('');
     }
   };
 
   const handleRemoveAmenity = (index: number) => {
-    setAmenities(amenities.filter((_, i) => i !== index));
+    setSelectedAmenities(selectedAmenities.filter((_, i) => i !== index));
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
+    if (!e.target.files || e.target.files.length === 0) return;
 
     try {
+      // Upload images to Supabase Storage
+      if (!user) {
+        setImageUploadError('User not authenticated. Please log in again.');
+        return;
+      }
       const uploadPromises = Array.from(e.target.files).map(async (file) => {
-        const uniqueName = `${Date.now()}-${file.name}`;
-        const storageRef = ref(storage, `properties/${uniqueName}`);
-        await uploadBytes(storageRef, file);
-        return getDownloadURL(storageRef);
+        const fileExt = file.name.split('.').pop();
+        const uniqueName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+        console.log('Uploading image:', uniqueName, file);
+        const { error } = await supabase.storage
+          .from('property-images')
+          .upload(`user_${user.id}/${uniqueName}`, file);
+
+        if (error) throw error;
+
+        // Get the public URL
+        const { data: publicUrlData } = supabase.storage
+          .from('property-images')
+          .getPublicUrl(uniqueName);
+
+        return publicUrlData.publicUrl;
       });
 
-      const urls = await Promise.all(uploadPromises);
-      setImages((prev) => [...prev, ...urls]);
-    } catch (error) {
-      setImageUploadError('Failed to upload images. Please try again.');
+      const uploadedImageUrls = await Promise.all(uploadPromises);
+      setImages((prev) => [...prev, ...uploadedImageUrls]);
+      setImageUploadError(null);
+    } catch (err: any) {
+      setImageUploadError('Failed to upload image(s). Please try again.');
+      console.error('Image upload error:', err);
     }
   };
 
-  const handleRemoveImage = async (index: number) => {
-    const imageUrlToRemove = images[index];
-    const imageRefToRemove = imageRefs[index];
-
-    setImages(images.filter((_, i) => i !== index));
-    setImageRefs(imageRefs.filter((_, i) => i !== index));
-
-    if (imageRefToRemove) {
-      try {
-        const imageToDeleteRef = ref(storage, imageRefToRemove);
-        await deleteObject(imageToDeleteRef);
-        console.log('Image deleted from storage:', imageRefToRemove);
-      } catch (error) {
-        console.error('Error deleting image from storage:', error);
-      }
-    }
+  // Remove image from images state
+  const handleRemoveImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (!user?.id || user.role !== 'landlord') {
-      setError('User is not authenticated or not authorized as a landlord. Please log in.');
-      navigate('/login');
+    setSuccess('');
+    
+    if (!user) {
+      setError('You must be logged in to add a property.');
       return;
     }
-
-    if (!title || !description || !price || !district || !areaName || !propertySize) {
-      setError('Please fill in all required fields (Title, Description, Price, District, Area, Area Size).');
+    
+    if (!title || !description || !price || !location || !district) {
+      setError('Please fill in all required fields.');
       return;
     }
-
-    if (isNaN(Number(price)) || Number(price) <= 0) {
-      setError('Please enter a valid positive price amount.');
+    
+    // Check verification status before submitting
+    if (verificationCheck && !verificationCheck.canList) {
+      setError(verificationCheck.message || 'You do not have permission to list properties at this time.');
       return;
     }
-
-    if (isNaN(Number(propertySize)) || Number(propertySize) <= 0) {
-      setError('Please enter a valid positive area size.');
+    
+    // Validate other fields
+    if (isNaN(price) || price <= 0) {
+      setError('Please enter a valid price.');
       return;
     }
-
-    if (images.length === 0) {
-      setError('Please add at least one property image.');
+    
+    if (isNaN(bedrooms) || bedrooms < 0) {
+      setError('Please enter a valid number of bedrooms.');
       return;
     }
-
+    
+    if (isNaN(bathrooms) || bathrooms < 0) {
+      setError('Please enter a valid number of bathrooms.');
+      return;
+    }
+    
+    if (!images || images.length === 0) {
+      setError('Please upload at least one image.');
+      return;
+    }
+    
     setIsSubmitting(true);
-
+    
     try {
-      const locationString = `${areaName}${sector ? `, ${sector}` : ''}`;
-
-      const newPropertyData = {
+      // Prepare property data
+      const propertyData = {
         title: title.trim(),
         description: description.trim(),
         price: Number(price),
-        location: locationString,
-        district,
-        type: propertyType,
-        bedrooms: Number(bedrooms) || 0,
-        bathrooms: Number(bathrooms) || 0,
-        area: propertySize,
-        isSelfContained,
-        amenities,
+        location: location.trim(),
+        district: district.trim(),
+        type,
+        bedrooms: Number(bedrooms),
+        bathrooms: Number(bathrooms),
+        area: area.trim(),
+        is_self_contained: isSelfContained,
+        amenities: selectedAmenities,
         images,
-        isFeatured: false,
-        createdBy: user.id,
-        landlordId: user.id,
-        landlordName: user.name || 'N/A',
-        landlordContact: user.contact || 'N/A',
-        createdAt: serverTimestamp(),
-        listingType,
-        paymentCycle: listingType === 'rent' ? paymentCycle : null,
-        fencingType, // New field
-        propertyCategory, // New field
-        isAvailable, // New field
-        hasElectricity, // New field
-        hasWater, // New field
-        googleMapLink: googleMapLink.trim() || null, // New field
+        landlord_name: landlordName.trim(),
+        landlord_contact: landlordContact.trim()
       };
-
-      const docRef = await addDoc(collection(db, 'properties'), newPropertyData);
-      console.log('Property added with ID: ', docRef.id);
-
-      navigate('/dashboard');
-    } catch (err: any) {
-      console.error('Submit Error:', err);
-      setError(`Failed to add property: ${err.message || 'Please try again.'}`);
+      
+      // Add property using context
+      const result = await addProperty(propertyData);
+      
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      
+      if (result.property) {
+        setSuccess('Property added successfully!');
+        // Reset form
+        setTitle('');
+        setDescription('');
+        setPrice('');
+        setLocation('');
+        setDistrict('');
+        setType('apartment');
+        setBedrooms(1);
+        setBathrooms(1);
+        setArea('');
+        setIsSelfContained(false);
+        setSelectedAmenities([]);
+        setImages([]);
+        setLandlordName('');
+        setLandlordContact('');
+        
+        // Redirect to property detail page after a short delay
+        setTimeout(() => {
+          navigate(`/properties/${result.property?.id}`);
+        }, 2000);
+      }
+    } catch (err) {
+      console.error('Error adding property:', err);
+      setError('Failed to add property. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (!isAuthenticated || user?.role !== 'landlord') {
-    return null;
+  const [landlordName, setLandlordName] = useState(user?.name || '');
+  const [landlordContact, setLandlordContact] = useState(user?.email || '');
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+
+  if (!isAuthenticated) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <ShieldAlert className="h-12 w-12 text-red-500 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold text-gray-800 mb-2">Access Denied</h2>
+        <p className="text-gray-600 mb-4">You must be logged in as a landlord to add properties.</p>
+        <button 
+          onClick={() => navigate('/login')}
+          className="btn btn-primary"
+        >
+          Login
+        </button>
+      </div>
+    );
+  }
+  
+  if (user && user.role !== 'landlord' && user.role !== 'admin') {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <ShieldAlert className="h-12 w-12 text-red-500 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold text-gray-800 mb-2">Access Denied</h2>
+        <p className="text-gray-600 mb-4">Only landlords and administrators can add properties.</p>
+        <button 
+          onClick={() => navigate('/')}
+          className="btn btn-primary"
+        >
+          Go Home
+        </button>
+      </div>
+    );
+  }
+  
+  if (verificationCheck && !verificationCheck.canList) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
+          <div className="text-center">
+            <ShieldAlert className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">Verification Required</h2>
+            <p className="text-gray-600 mb-4">
+              {verificationCheck.message || 'You need to verify your account to list properties.'}
+            </p>
+            <button 
+              onClick={() => navigate('/profile')}
+              className="btn btn-primary"
+            >
+              Go to Profile
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -229,35 +308,13 @@ const AddPropertyPage: React.FC = () => {
             {error}
           </div>
         )}
+        {success && (
+          <div className="mb-4 p-3 bg-green-100 text-green-700 border border-green-300 rounded-md text-sm">
+            {success}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md overflow-hidden p-6">
   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    {/* Listing Type */}
-    <div className="col-span-2">
-      <label className="block text-sm font-medium text-gray-700 mb-2">Listing Type</label>
-      <div className="flex gap-4">
-        <label className="flex items-center">
-          <input
-            type="radio"
-            value="rent"
-            checked={listingType === 'rent'}
-            onChange={(e) => setListingType(e.target.value as 'rent' | 'sale')}
-            className="h-4 w-4 text-blue-600"
-          />
-          <span className="ml-2">For Rent</span>
-        </label>
-        <label className="flex items-center">
-          <input
-            type="radio"
-            value="sale"
-            checked={listingType === 'sale'}
-            onChange={(e) => setListingType(e.target.value as 'rent' | 'sale')}
-            className="h-4 w-4 text-blue-600"
-          />
-          <span className="ml-2">For Sale</span>
-        </label>
-      </div>
-    </div>
-
     {/* Title */}
     <div className="col-span-2">
       <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
@@ -282,11 +339,9 @@ const AddPropertyPage: React.FC = () => {
       />
     </div>
 
-    {/* Price and Payment Cycle */}
+    {/* Price */}
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        {listingType === 'rent' ? 'Monthly Rent' : 'Sale Price'} (MWK)
-      </label>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Price (MWK)</label>
       <input
         type="number"
         value={price}
@@ -295,37 +350,20 @@ const AddPropertyPage: React.FC = () => {
         className="w-full p-2 border rounded-md"
       />
     </div>
-    {listingType === 'rent' && (
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Payment Cycle</label>
-        <select
-          value={paymentCycle}
-          onChange={(e) => setPaymentCycle(e.target.value as any)}
-          className="w-full p-2 border rounded-md"
-        >
-          <option value="monthly">Monthly</option>
-          <option value="2 months">Every 2 Months</option>
-          <option value="3 months">Every 3 Months</option>
-        </select>
-      </div>
-    )}
 
-    {/* Property Type */}
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">Property Type</label>
-      <select
-        value={propertyType}
-        onChange={(e) => setPropertyType(e.target.value as any)}
+    {/* Location */}
+    <div className="col-span-2">
+      <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+      <input
+        type="text"
+        value={location}
+        onChange={(e) => setLocation(e.target.value)}
+        required
         className="w-full p-2 border rounded-md"
-      >
-        <option value="house">House</option>
-        <option value="apartment">Apartment</option>
-        <option value="room">Room</option>
-        <option value="commercial">Commercial</option>
-      </select>
+      />
     </div>
 
-    {/* Location Fields */}
+    {/* District */}
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">District</label>
       <select
@@ -344,8 +382,8 @@ const AddPropertyPage: React.FC = () => {
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">Area</label>
       <select
-        value={areaName}
-        onChange={handleAreaChange}
+        value={area}
+        onChange={(e) => setArea(e.target.value)}
         required
         className="w-full p-2 border rounded-md"
         disabled={!district}
@@ -357,21 +395,20 @@ const AddPropertyPage: React.FC = () => {
       </select>
     </div>
 
-    {district && areaName && districtsWithAreasAndSectors[district][areaName].length > 0 && (
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Sector</label>
-        <select
-          value={sector}
-          onChange={(e) => setSector(e.target.value)}
-          className="w-full p-2 border rounded-md"
-        >
-          <option value="">Select Sector</option>
-          {districtsWithAreasAndSectors[district][areaName].map((sector) => (
-            <option key={sector} value={sector}>{sector}</option>
-          ))}
-        </select>
-      </div>
-    )}
+    {/* Property Type */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Property Type</label>
+      <select
+        value={type}
+        onChange={(e) => setType(e.target.value)}
+        className="w-full p-2 border rounded-md"
+      >
+        <option value="apartment">Apartment</option>
+        <option value="house">House</option>
+        <option value="room">Room</option>
+        <option value="commercial">Commercial</option>
+      </select>
+    </div>
 
     {/* Property Details */}
     <div>
@@ -379,7 +416,7 @@ const AddPropertyPage: React.FC = () => {
       <input
         type="number"
         value={bedrooms}
-        onChange={(e) => setBedrooms(e.target.value)}
+        onChange={(e) => setBedrooms(Number(e.target.value))}
         className="w-full p-2 border rounded-md"
       />
     </div>
@@ -389,18 +426,18 @@ const AddPropertyPage: React.FC = () => {
       <input
         type="number"
         value={bathrooms}
-        onChange={(e) => setBathrooms(e.target.value)}
+        onChange={(e) => setBathrooms(Number(e.target.value))}
         className="w-full p-2 border rounded-md"
       />
     </div>
 
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">Property Size (sqm)</label>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Area (sqm)</label>
       <input
         type="number"
-        value={propertySize}
-        onChange={(e) => setPropertySize(e.target.value)}
-        required
+        value={area}
+        onChange={(e) => setArea(e.target.value)}
+        required={false}
         className="w-full p-2 border rounded-md"
       />
     </div>
@@ -436,7 +473,7 @@ const AddPropertyPage: React.FC = () => {
         </button>
       </div>
       <div className="flex flex-wrap gap-2">
-        {amenities.map((amenity, index) => (
+        {selectedAmenities.map((amenity, index) => (
           <div key={index} className="flex items-center bg-gray-100 px-2 py-1 rounded">
             <span className="text-sm">{amenity}</span>
             <button
@@ -468,20 +505,16 @@ const AddPropertyPage: React.FC = () => {
           </div>
         ))}
         <label className="h-32 w-32 flex items-center justify-center border-2 border-dashed rounded cursor-pointer hover:border-blue-500">
-          {isUploadingImages ? (
-            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-          ) : (
-            <>
-              <Camera className="h-8 w-8 text-gray-400" />
-              <input
-                type="file"
-                multiple
-                onChange={handleImageUpload}
-                className="hidden"
-                accept="image/*"
-              />
-            </>
-          )}
+          <>
+            <Camera className="h-8 w-8 text-gray-400" />
+            <input
+              type="file"
+              multiple
+              onChange={handleImageUpload}
+              className="hidden"
+              accept="image/*"
+            />
+          </>
         </label>
       </div>
       {imageUploadError && (
@@ -489,87 +522,29 @@ const AddPropertyPage: React.FC = () => {
       )}
     </div>
 
-    {/* Fencing Type */}
-<div>
-  <label htmlFor="fencingType" className="block text-sm font-medium text-gray-700 mb-2">Fencing Type</label>
-  <select
-    id="fencingType"
-    value={fencingType}
-    onChange={(e) => setFencingType(e.target.value as 'brick fenced' | 'glass fenced' | 'wood pallets' | 'incomplete fencing' | 'none')}
-    className="w-full p-2 border rounded-md"
-  >
-    <option value="none">None</option>
-    <option value="brick fenced">Brick Fenced</option>
-    <option value="glass fenced">Glass Fenced</option>
-    <option value="wood pallets">Wood Pallets</option>
-    <option value="incomplete fencing">Incomplete Fencing</option>
-  </select>
-</div>
+    {/* Landlord Name */}
+    <div className="col-span-2">
+      <label className="block text-sm font-medium text-gray-700 mb-2">Landlord Name</label>
+      <input
+        type="text"
+        value={landlordName}
+        onChange={(e) => setLandlordName(e.target.value)}
+        required
+        className="w-full p-2 border rounded-md"
+      />
+    </div>
 
-{/* Property Category */}
-<div>
-  <label htmlFor="propertyCategory" className="block text-sm font-medium text-gray-700 mb-2">Property Category</label>
-  <select
-    id="propertyCategory"
-    value={propertyCategory}
-    onChange={(e) => setPropertyCategory(e.target.value as 'standalone' | 'semi-detached' | 'townhouses' | 'bedsitter')}
-    className="w-full p-2 border rounded-md"
-  >
-    <option value="standalone">Standalone</option>
-    <option value="semi-detached">Semi-Detached</option>
-    <option value="townhouses">Townhouses</option>
-    <option value="bedsitter">Bedsitter</option>
-  </select>
-</div>
-
-{/* Availability */}
-<div className="flex items-center">
-  <input
-    type="checkbox"
-    id="isAvailable"
-    checked={isAvailable}
-    onChange={(e) => setIsAvailable(e.target.checked)}
-    className="h-4 w-4 text-blue-600"
-  />
-  <label htmlFor="isAvailable" className="ml-2 text-sm text-gray-700">Currently Available</label>
-</div>
-
-{/* Utilities */}
-<div className="flex gap-4">
-  <div className="flex items-center">
-    <input
-      type="checkbox"
-      id="hasElectricity"
-      checked={hasElectricity}
-      onChange={(e) => setHasElectricity(e.target.checked)}
-      className="h-4 w-4 text-blue-600"
-    />
-    <label htmlFor="hasElectricity" className="ml-2 text-sm text-gray-700">Electricity</label>
-  </div>
-  <div className="flex items-center">
-    <input
-      type="checkbox"
-      id="hasWater"
-      checked={hasWater}
-      onChange={(e) => setHasWater(e.target.checked)}
-      className="h-4 w-4 text-blue-600"
-    />
-    <label htmlFor="hasWater" className="ml-2 text-sm text-gray-700">Water</label>
-  </div>
-</div>
-
-{/* Google Map Link */}
-<div>
-  <label htmlFor="googleMapLink" className="block text-sm font-medium text-gray-700 mb-2">Google Map Link (Optional)</label>
-  <input
-    type="url"
-    id="googleMapLink"
-    value={googleMapLink}
-    onChange={(e) => setGoogleMapLink(e.target.value)}
-    className="w-full p-2 border rounded-md"
-    placeholder="Enter Google Map link"
-  />
-</div>
+    {/* Landlord Contact */}
+    <div className="col-span-2">
+      <label className="block text-sm font-medium text-gray-700 mb-2">Landlord Contact</label>
+      <input
+        type="text"
+        value={landlordContact}
+        onChange={(e) => setLandlordContact(e.target.value)}
+        required
+        className="w-full p-2 border rounded-md"
+      />
+    </div>
 
     {/* Submit Button */}
     <div className="col-span-2">

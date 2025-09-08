@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { supabase } from '../lib/supabase';
 import { useUser } from '../context/UserContext';
 
 const InquiriesPage: React.FC = () => {
@@ -49,7 +48,7 @@ const InquiriesPage: React.FC = () => {
             <li key={inquiry.id} className="mb-4">
               <h2 className="font-bold">{inquiry.propertyName}</h2>
               <p>From: {inquiry.inquirerName}</p>
-              <p>Date: {new Date(inquiry.createdAt.seconds * 1000).toLocaleDateString()}</p>
+              <p>Date: {new Date(inquiry.createdAt).toLocaleDateString()}</p>
             </li>
           ))}
         </ul>

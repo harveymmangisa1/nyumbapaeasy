@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useProperties } from '../context/PropertyContext';
 import { useUser } from '../context/UserContext';
 import { MapPin, User, Phone, Mail, Bed, Bath, Square, Heart, Share, ArrowLeft, Check, X } from 'lucide-react';
+import { analyticsService } from '../services/analyticsService';
+import { supabase } from '../lib/supabase';
 
 const PropertyDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { getPropertyById } = useProperties();
-  const { isAuthenticated } = useUser();
+  const { isAuthenticated, user } = useUser();
   const [property, setProperty] = useState(getPropertyById(id || ''));
   const [activeImage, setActiveImage] = useState(0);
   const [showContact, setShowContact] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [viewTracked, setViewTracked] = useState(false);
+  const navigate = useNavigate();
   
   // Update document title
   useEffect(() => {
@@ -21,6 +25,25 @@ const PropertyDetailPage: React.FC = () => {
       document.title = 'Property Not Found | NyumbaPaeasy';
     }
   }, [property]);
+  
+  // Track property view
+  useEffect(() => {
+    if (property && !viewTracked) {
+      trackPropertyView();
+      setViewTracked(true);
+    }
+  }, [property, viewTracked]);
+  
+  const trackPropertyView = async () => {
+    if (!property) return;
+    
+    try {
+      // Track the view
+      await analyticsService.trackPropertyView(property.id);
+    } catch (error) {
+      console.error('Error tracking property view:', error);
+    }
+  };
   
   if (!property) {
     return (
@@ -162,11 +185,11 @@ const PropertyDetailPage: React.FC = () => {
                   <span className="font-semibold">{property.area} m²</span>
                 </div>
                 <div className="flex flex-col items-center p-3 bg-gray-50 rounded-md">
-                  <div className={`h-6 w-6 rounded-full flex items-center justify-center mb-1 ${property.isSelfContained ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
-                    {property.isSelfContained ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                  <div className={`h-6 w-6 rounded-full flex items-center justify-center mb-1 ${property.is_self_contained ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
+                    {property.is_self_contained ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
                   </div>
                   <span className="text-sm text-gray-500">Self Contained</span>
-                  <span className="font-semibold">{property.isSelfContained ? 'Yes' : 'No'}</span>
+                  <span className="font-semibold">{property.is_self_contained ? 'Yes' : 'No'}</span>
                 </div>
               </div>
               
@@ -215,7 +238,7 @@ const PropertyDetailPage: React.FC = () => {
                   <User className="h-6 w-6 text-gray-600" />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-800">{property.landlordName}</p>
+                  <p className="font-medium text-gray-800">{property.landlord_name}</p>
                   <p className="text-sm text-gray-600">Property Owner</p>
                 </div>
               </div>
@@ -303,11 +326,11 @@ const PropertyDetailPage: React.FC = () => {
                   {isAuthenticated ? (
                     <div className="space-y-3">
                       <a
-                        href={`tel:${property.landlordContact}`}
+                        href={`tel:${property.landlord_contact}`}
                         className="flex items-center p-2 bg-gray-50 hover:bg-gray-100 rounded-md text-gray-700 transition-colors"
                       >
                         <Phone className="h-5 w-5 mr-3 text-emerald-600" />
-                        <span>{property.landlordContact}</span>
+                        <span>{property.landlord_contact}</span>
                       </a>
                       <a
                         href="mailto:landlord@example.com"
@@ -337,7 +360,7 @@ const PropertyDetailPage: React.FC = () => {
                 <li className="flex justify-between border-b border-gray-100 pb-2">
                   <span className="text-gray-600">Listed On:</span>
                   <span className="font-medium">
-                    {new Date(property.createdAt.toDate()).toLocaleDateString()}
+                    {new Date(property.created_at).toLocaleDateString()}
                   </span>
                 </li>
                 <li className="flex justify-between border-b border-gray-100 pb-2">
@@ -356,9 +379,13 @@ const PropertyDetailPage: React.FC = () => {
                     </li>
                   </>
                 )}
+                <li className="flex justify-between border-b border-gray-100 pb-2">
+                  <span className="text-gray-600">Views:</span>
+                  <span className="font-medium">{property.views || 0}</span>
+                </li>
                 <li className="flex justify-between">
                   <span className="text-gray-600">Self Contained:</span>
-                  <span className="font-medium">{property.isSelfContained ? 'Yes' : 'No'}</span>
+                  <span className="font-medium">{property.is_self_contained ? 'Yes' : 'No'}</span>
                 </li>
               </ul>
             </div>

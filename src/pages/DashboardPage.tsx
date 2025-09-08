@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { collection, getDocs, query, where, doc, deleteDoc } from 'firebase/firestore'; // Import doc and deleteDoc
-import { getStorage, ref, deleteObject } from 'firebase/storage'; // Import storage functions
-import { db, app } from '../firebaseConfig'; // Import app for storage
-import { Home, Users, MessageSquare, Settings, PlusCircle, Edit, Trash2, Eye, Loader2 } from 'lucide-react'; // Import Loader2
+import { supabase } from '../lib/supabase';
+import { Home, Users, MessageSquare, Settings, PlusCircle, Edit, Trash2, Eye, Loader2, BarChart3 } from 'lucide-react';
+import { analyticsService } from '../services/analyticsService';
 
-// Define a more specific type for properties fetched from Firestore
+// Define a more specific type for properties fetched from Supabase
 interface PropertyData {
     id: string;
     title: string;
@@ -16,6 +15,7 @@ interface PropertyData {
     images: string[]; // URLs
     imageRefs?: string[]; // Optional: Paths in storage for deletion
     views?: number;
+    created_at: string;
     // Add other relevant property fields if needed
     [key: string]: any; // Allow other properties
 }
@@ -25,7 +25,7 @@ interface InquiryData {
     id: string;
     isRead: boolean;
     from: string;
-    date: any; // Firestore timestamp or Date
+    date: string;
     propertyTitle: string;
     message: string;
     email: string;
@@ -35,15 +35,14 @@ interface InquiryData {
     [key: string]: any; // Allow other properties
 }
 
-
 const DashboardPage: React.FC = () => {
   const { user, isAuthenticated } = useUser();
   const navigate = useNavigate();
-  const storage = getStorage(app); // Initialize storage
-
+  
   const [activeTab, setActiveTab] = useState('properties');
   const [landlordProperties, setLandlordProperties] = useState<PropertyData[]>([]); // Use specific type
   const [totalViews, setTotalViews] = useState(0);
+  const [popularProperties, setPopularProperties] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<InquiryData[]>([]); // Use specific type
   const [loading, setLoading] = useState(true);
   const [deletingPropertyId, setDeletingPropertyId] = useState<string | null>(null); // Track which property is being deleted
@@ -62,7 +61,7 @@ const DashboardPage: React.FC = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
-  // Fetch landlord properties and inquiries from Firestore
+  // Fetch landlord properties and inquiries from Supabase
   const fetchDashboardData = async () => {
     if (!user?.id) return;
 
@@ -70,36 +69,35 @@ const DashboardPage: React.FC = () => {
 
     try {
       // Fetch properties owned by the landlord
-      const propertiesQuery = query(
-        collection(db, 'properties'),
-        where('landlordId', '==', user.id)
-      );
-      const propertiesSnapshot = await getDocs(propertiesQuery);
-      const properties = propertiesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as PropertyData[]; // Cast to specific type
+      const { data: properties, error: propertiesError } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('landlord_id', user.id);
 
-      setLandlordProperties(properties);
+      if (propertiesError) throw propertiesError;
 
-      // Calculate total views
+      setLandlordProperties(properties as PropertyData[]);
+
+      // Calculate total views (assuming 'views' column exists in Supabase)
       const views = properties.reduce((sum, property) => sum + (property.views || 0), 0);
       setTotalViews(views);
+
+      // Fetch popular properties
+      const { properties: popularProps, error: popularError } = await analyticsService.getPopularProperties(user.id);
+      if (!popularError) {
+        setPopularProperties(popularProps);
+      }
 
       // Fetch inquiries related to the landlord's properties (if any properties exist)
       if (properties.length > 0) {
           const propertyIds = properties.map(p => p.id);
-          // Firestore 'in' queries are limited to 30 items. Handle larger sets if necessary.
-          const inquiriesQuery = query(
-            collection(db, 'inquiries'),
-            where('propertyId', 'in', propertyIds.slice(0, 30)) // Handle potential limit
-          );
-          const inquiriesSnapshot = await getDocs(inquiriesQuery);
-          const inquiriesData = inquiriesSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as InquiryData[]; // Cast to specific type
-          setInquiries(inquiriesData);
+          const { data: inquiriesData, error: inquiriesError } = await supabase
+            .from('inquiries')
+            .select('*')
+            .in('propertyId', propertyIds);
+
+          if (inquiriesError) throw inquiriesError;
+          setInquiries(inquiriesData as InquiryData[]);
       } else {
           setInquiries([]); // No properties, so no inquiries
       }
@@ -122,7 +120,7 @@ const DashboardPage: React.FC = () => {
   // --- Action Handlers ---
 
   const handleViewProperty = (propertyId: string) => {
-    navigate(`/property/${propertyId}`);
+    navigate(`/properties/${propertyId}`);
   };
 
   const handleEditProperty = (propertyId: string) => {
@@ -139,100 +137,73 @@ const DashboardPage: React.FC = () => {
     setDeletingPropertyId(propertyToDelete.id); // Indicate deletion is in progress
 
     try {
-      // 1. Delete Firestore document
-      const propertyDocRef = doc(db, 'properties', propertyToDelete.id);
-      await deleteDoc(propertyDocRef);
+      // 1. Delete Supabase document
+      const { error: deleteError } = await supabase
+        .from('properties')
+        .delete()
+        .eq('id', propertyToDelete.id);
+
+      if (deleteError) throw deleteError;
       console.log(`Property document ${propertyToDelete.id} deleted.`);
 
-      // 2. Delete associated images from Storage
-      // IMPORTANT: This assumes image URLs can be reliably converted back to storage paths
-      // or that you store the storage paths (e.g., in an `imageRefs` array) in Firestore.
-      // If using only URLs, this part might be complex or unreliable.
-      // Let's try deriving from URL (common pattern: find path after '/o/')
-      const deleteImagePromises: Promise<void>[] = [];
-      if (propertyToDelete.images && propertyToDelete.images.length > 0) {
-          propertyToDelete.images.forEach(imageUrl => {
-              try {
-                  // Attempt to create a ref from the download URL
-                  const imageRef = ref(storage, imageUrl);
-                  deleteImagePromises.push(deleteObject(imageRef));
-              } catch (storageError) {
-                  // This might fail if the URL isn't a direct storage URL
-                  // Or try extracting path if URL structure is known:
-                  try {
-                      const url = new URL(imageUrl);
-                      const pathName = decodeURIComponent(url.pathname);
-                      // Firebase Storage paths often look like /v0/b/your-bucket.appspot.com/o/properties%2Fimage.jpg
-                      const pathStartIndex = pathName.indexOf('/o/');
-                      if (pathStartIndex !== -1) {
-                          const storagePath = pathName.substring(pathStartIndex + 3); // Get path after '/o/'
-                          if (storagePath) {
-                              const directRef = ref(storage, storagePath);
-                              console.log(`Attempting deletion via derived path: ${storagePath}`);
-                              deleteImagePromises.push(deleteObject(directRef));
-                          } else {
-                             console.warn(`Could not derive storage path for URL: ${imageUrl}`);
-                          }
-                      } else {
-                          console.warn(`Could not derive storage path for URL (format unexpected): ${imageUrl}`);
-                      }
-                  } catch (parseError) {
-                     console.error(`Error parsing or creating ref for image URL ${imageUrl}:`, storageError, parseError);
-                  }
-              }
-          });
+      // 2. Delete associated images from Supabase Storage (if imageRefs exist)
+      if (propertyToDelete.imageRefs && propertyToDelete.imageRefs.length > 0) {
+        const { error: storageError } = await supabase
+          .storage
+          .from('property-images')
+          .remove(propertyToDelete.imageRefs); // imageRefs should be the full paths
 
-          try {
-              await Promise.all(deleteImagePromises);
-              console.log(`Associated images for property ${propertyToDelete.id} deleted from storage.`);
-          } catch (imageDeleteError) {
-              console.error(`Error deleting some images for property ${propertyToDelete.id}:`, imageDeleteError);
-              // Decide if you want to proceed or show an error. Usually proceed.
-          }
+        if (storageError) {
+          console.error("Error deleting images from storage:", storageError);
+          // Note: The property document is already deleted, but images might remain.
+          // Consider how to handle this case (e.g., alert user, log for manual cleanup)
+        } else {
+          console.log(`Deleted ${propertyToDelete.imageRefs.length} images from storage.`);
+        }
       }
 
+      // 3. Update local state to remove the deleted property
+      setLandlordProperties(prev => prev.filter(property => property.id !== propertyToDelete.id));
+      setInquiries(prev => prev.filter(inquiry => inquiry.propertyId !== propertyToDelete.id)); // Also remove related inquiries
 
-      // 3. Update UI state - remove the deleted property
-      setLandlordProperties(prevProperties =>
-        prevProperties.filter(p => p.id !== propertyToDelete.id)
-      );
-
-      // Optional: Refresh inquiries if needed, though deleting a property might implicitly remove related inquiries over time or via backend functions.
-      // fetchDashboardData(); // Or just update the properties list locally as done above.
-
-      console.log(`Property ${propertyToDelete.id} deleted successfully.`);
-      // Optional: Add a success notification/toast
-
+      // 4. Show success feedback (optional)
+      alert(`"${propertyToDelete.title}" has been successfully deleted.`);
     } catch (error) {
-      console.error(`Error deleting property ${propertyToDelete.id}:`, error);
-      alert('Failed to delete property. Please check the console and try again.');
-      // Optional: Add an error notification/toast
+      console.error("Error deleting property:", error);
+      alert("An error occurred while deleting the property. Please try again.");
     } finally {
-      setDeletingPropertyId(null); // Reset deletion indicator
+      setDeletingPropertyId(null); // Reset deletion state
     }
   };
 
-
-  // --- Render Logic ---
-
-  if (!isAuthenticated || user?.role !== 'landlord') {
-    // Redirect is handled by useEffect, return null or a placeholder while redirecting
-    return null;
-  }
-
   if (loading) {
     return (
-        <div className="flex justify-center items-center min-h-[400px]">
-            <Loader2 className="h-10 w-10 animate-spin text-emerald-600" />
-            <span className="ml-3 text-gray-600">Loading Dashboard...</span>
+      <div className="min-h-screen bg-gray-100 py-12 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading your dashboard...</p>
         </div>
+      </div>
     );
   }
 
   return (
-    <div className="bg-gray-100 min-h-screen">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6">Landlord Dashboard</h1>
+    <div className="min-h-screen bg-gray-100 py-8">
+      <div className="container mx-auto px-4">
+        {/* Page Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Landlord Dashboard</h1>
+            <p className="text-gray-600 mt-2">Manage your properties and view analytics</p>
+          </div>
+          <button
+            onClick={() => navigate('/add-property')}
+            className="btn btn-primary mt-4 md:mt-0 flex items-center"
+          >
+            <PlusCircle className="h-5 w-5 mr-2" />
+            Add New Property
+          </button>
+        </div>
 
         {/* Dashboard Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -251,11 +222,24 @@ const DashboardPage: React.FC = () => {
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center">
               <div className="rounded-full bg-blue-100 p-3 mr-4">
-                <Users className="h-6 w-6 text-blue-600" />
+                <BarChart3 className="h-6 w-6 text-blue-600" />
               </div>
               <div>
                 <p className="text-sm text-gray-500">Total Views</p>
-                <p className="text-2xl font-bold text-gray-800">{totalViews}</p> {/* Assuming totalViews is calculated */}
+                <p className="text-2xl font-bold text-gray-800">{totalViews}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center">
+              <div className="rounded-full bg-purple-100 p-3 mr-4">
+                <Users className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Top Property Views</p>
+                <p className="text-2xl font-bold text-gray-800">
+                  {popularProperties.length > 0 ? popularProperties[0]?.views || 0 : 0}
+                </p>
               </div>
             </div>
           </div>
@@ -265,64 +249,70 @@ const DashboardPage: React.FC = () => {
                 <MessageSquare className="h-6 w-6 text-orange-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">New Inquiries</p>
-                <p className="text-2xl font-bold text-gray-800">{inquiries.filter(i => !i.isRead).length}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center">
-              <div className="rounded-full bg-purple-100 p-3 mr-4">
-                <Settings className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Active Listings</p>
-                <p className="text-2xl font-bold text-gray-800">{landlordProperties.length}</p> {/* Simplistic, could filter by status */}
+                <p className="text-sm text-gray-500">Inquiries</p>
+                <p className="text-2xl font-bold text-gray-800">{inquiries.length}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Dashboard Tabs */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
-          <div className="flex border-b border-gray-200">
-            {/* Tab Buttons */}
-            <button
-              className={`px-6 py-3 text-sm font-medium ${
-                activeTab === 'properties'
-                  ? 'text-emerald-600 border-b-2 border-emerald-600'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-              onClick={() => setActiveTab('properties')}
-            >
-              My Properties
-            </button>
-            <button
-              className={`px-6 py-3 text-sm font-medium ${
-                activeTab === 'inquiries'
-                  ? 'text-emerald-600 border-b-2 border-emerald-600'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-              onClick={() => setActiveTab('inquiries')}
-            >
-              Inquiries ({inquiries.length})
-            </button>
+        {/* Popular Properties */}
+        {popularProperties.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Your Most Popular Properties</h2>
+            <div className="space-y-4">
+              {popularProperties.map((property, index) => (
+                <div key={property.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-md">
+                  <div className="flex items-center">
+                    <div className="text-lg font-bold text-gray-400 w-8">#{index + 1}</div>
+                    <div className="ml-4">
+                      <p className="font-medium text-gray-800">{property.title}</p>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Eye className="h-4 w-4 mr-1" />
+                        <span>{property.views} views</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleViewProperty(property.id)}
+                    className="btn btn-sm btn-outline text-emerald-600 hover:bg-emerald-50 hover:border-emerald-500"
+                  >
+                    View Details
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
+        )}
 
-          {/* Properties Tab Content */}
+        {/* Tab Navigation */}
+        <div className="flex border-b border-gray-200 mb-6">
+          <button
+            className={`py-2 px-4 font-medium text-sm ${
+              activeTab === 'properties'
+                ? 'text-emerald-600 border-b-2 border-emerald-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            onClick={() => setActiveTab('properties')}
+          >
+            My Properties
+          </button>
+          <button
+            className={`py-2 px-4 font-medium text-sm ${
+              activeTab === 'inquiries'
+                ? 'text-emerald-600 border-b-2 border-emerald-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            onClick={() => setActiveTab('inquiries')}
+          >
+            Inquiries
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div>
           {activeTab === 'properties' && (
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-800">Your Listed Properties</h2>
-                <button
-                  onClick={() => navigate('/add-property')}
-                  className="btn btn-primary flex items-center"
-                >
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Add New Property
-                </button>
-              </div>
-
+            <div>
               {landlordProperties.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
@@ -332,6 +322,7 @@ const DashboardPage: React.FC = () => {
                         <th className="px-4 py-3 text-sm font-semibold text-gray-600">Type</th>
                         <th className="px-4 py-3 text-sm font-semibold text-gray-600">Price</th>
                         <th className="px-4 py-3 text-sm font-semibold text-gray-600">Location</th>
+                        <th className="px-4 py-3 text-sm font-semibold text-gray-600">Views</th>
                         <th className="px-4 py-3 text-sm font-semibold text-gray-600">Status</th>
                         <th className="px-4 py-3 text-sm font-semibold text-gray-600">Actions</th>
                       </tr>
@@ -343,23 +334,35 @@ const DashboardPage: React.FC = () => {
                             <div className="flex items-center">
                               <div className="h-10 w-10 rounded-md overflow-hidden mr-3 flex-shrink-0">
                                 <img
-                                    src={property.images?.[0] || '/placeholder-image.png'} // Use placeholder if no image
-                                    alt={property.title}
-                                    className="h-full w-full object-cover"
-                                    onError={(e) => (e.currentTarget.src = '/placeholder-image.png')} // Handle broken image links
+                                  src={property.images && property.images.length > 0 ? property.images[0] : '/placeholder-image.jpg'}
+                                  alt={property.title}
+                                  className="h-full w-full object-cover"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = '/placeholder-image.jpg';
+                                  }}
                                 />
                               </div>
-                              <span className="font-medium text-gray-800 truncate max-w-xs" title={property.title}>
-                                {property.title}
-                              </span>
+                              <div>
+                                <p className="font-medium text-gray-800">{property.title}</p>
+                                <p className="text-xs text-gray-500">
+                                  Added {new Date(property.created_at).toLocaleDateString()}
+                                </p>
+                              </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3 capitalize">{property.type}</td>
-                          <td className="px-4 py-3">MK {property.price?.toLocaleString() ?? 'N/A'}</td>
-                          <td className="px-4 py-3">{property.location}</td>
                           <td className="px-4 py-3">
-                            {/* Status logic can be more complex */}
-                            <span className="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
+                              {property.type}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 font-medium text-gray-800">
+                            MK {property.price?.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">{property.location}</td>
+                          <td className="px-4 py-3 font-medium text-gray-800">{property.views || 0}</td>
+                          <td className="px-4 py-3">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                               Active
                             </span>
                           </td>
@@ -421,35 +424,26 @@ const DashboardPage: React.FC = () => {
             </div>
           )}
 
-          {/* Inquiries Tab Content */}
           {activeTab === 'inquiries' && (
-            <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">Recent Inquiries</h2>
-
+            <div>
               {inquiries.length > 0 ? (
                 <div className="space-y-4">
-                  {inquiries.map(inquiry => (
-                    <div
-                      key={inquiry.id}
-                      className={`p-4 rounded-lg border ${
-                        inquiry.isRead ? 'border-gray-200 bg-white' : 'border-blue-300 bg-blue-50'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-medium text-gray-800">
-                          Inquiry from: {inquiry.from || 'Anonymous'}
-                          {!inquiry.isRead && (
-                            <span className="ml-2 text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full align-middle">New</span>
-                          )}
-                        </h3>
-                        <span className="text-sm text-gray-500 flex-shrink-0 ml-2">
-                          {/* Format date nicely */}
-                          {inquiry.date?.toDate ? new Date(inquiry.date.toDate()).toLocaleDateString() : 'Unknown Date'}
-                        </span>
+                  {inquiries.map((inquiry) => (
+                    <div key={inquiry.id} className="bg-white rounded-lg shadow-md p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-800">{inquiry.propertyTitle}</h3>
+                          <p className="text-gray-600">From: {inquiry.from}</p>
+                          <p className="text-gray-500 text-sm">{new Date(inquiry.date).toLocaleDateString()}</p>
+                        </div>
+                        {!inquiry.isRead && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 self-start sm:self-center">
+                            New
+                          </span>
+                        )}
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">Regarding: <span className="font-medium">{inquiry.propertyTitle || 'N/A'}</span></p>
-                      <p className="text-sm text-gray-700 mb-3 bg-gray-50 p-2 rounded border border-gray-200">{inquiry.message || '(No message)'}</p>
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                      <p className="text-gray-700 mb-4">{inquiry.message}</p>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                         <div className="text-sm text-gray-600 mb-2 sm:mb-0">
                           <span className="block sm:inline-block mr-4">Email: <a href={`mailto:${inquiry.email}`} className="text-blue-600 hover:underline">{inquiry.email || 'N/A'}</a></span>
                           <span className="block sm:inline-block">Phone: <a href={`tel:${inquiry.phone}`} className="text-blue-600 hover:underline">{inquiry.phone || 'N/A'}</a></span>

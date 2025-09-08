@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, X, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, X, Filter, ChevronDown, ChevronUp, DollarSign, Home, Bed, Bath } from 'lucide-react';
 import { SearchFilters } from '../../context/PropertyContext';
 
 interface PropertyFilterProps {
@@ -9,7 +9,7 @@ interface PropertyFilterProps {
 
 const PropertyFilter: React.FC<PropertyFilterProps> = ({ onFilter, initialFilters = {} }) => {
   const [filters, setFilters] = useState<SearchFilters>(initialFilters);
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(true);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target as HTMLInputElement;
@@ -35,144 +35,154 @@ const PropertyFilter: React.FC<PropertyFilterProps> = ({ onFilter, initialFilter
   };
   
   return (
-    <div className="bg-white rounded-lg shadow-md p-5 mb-6">
+    <div className="w-full">
       <form onSubmit={handleSubmit}>
         {/* Basic Search */}
-        <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
-          <div className="flex-grow">
-            <div className="relative">
-              <input
-                type="text"
-                name="location"
-                value={filters.location || ''}
-                onChange={handleInputChange}
-                placeholder="Search by location or district..."
-                className="input pl-10"
-              />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            <button
-              type="submit"
-              className="btn btn-primary flex-shrink-0 min-w-24"
-            >
-              Search
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
-              className="btn btn-outline flex items-center space-x-1"
-            >
-              <Filter className="h-4 w-4" />
-              <span>Filters</span>
-              {isAdvancedOpen ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </button>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Location
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              name="location"
+              value={filters.location || ''}
+              onChange={handleInputChange}
+              placeholder="Search by location or district..."
+              className="input pl-10 py-3"
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           </div>
         </div>
         
+        {/* Advanced Filters Toggle */}
+        <button
+          type="button"
+          onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
+          className="flex items-center text-emerald-600 font-medium mb-4 w-full justify-between"
+        >
+          <span className="flex items-center">
+            <Filter className="h-4 w-4 mr-2" />
+            Advanced Filters
+          </span>
+          {isAdvancedOpen ? (
+            <ChevronUp className="h-5 w-5" />
+          ) : (
+            <ChevronDown className="h-5 w-5" />
+          )}
+        </button>
+        
         {/* Advanced Filters */}
         {isAdvancedOpen && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200 animate-fade-in">
+          <div className="space-y-4 animate-fade-in">
             {/* Price Range */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <DollarSign className="h-4 w-4 inline mr-1" />
                 Price Range (MK)
               </label>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="number"
-                  name="minPrice"
-                  value={filters.minPrice || ''}
-                  onChange={handleInputChange}
-                  placeholder="Min"
-                  className="input"
-                />
-                <span className="text-gray-500">-</span>
-                <input
-                  type="number"
-                  name="maxPrice"
-                  value={filters.maxPrice || ''}
-                  onChange={handleInputChange}
-                  placeholder="Max"
-                  className="input"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <input
+                    type="number"
+                    name="minPrice"
+                    value={filters.minPrice || ''}
+                    onChange={handleInputChange}
+                    placeholder="Min price"
+                    className="input w-full"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="number"
+                    name="maxPrice"
+                    value={filters.maxPrice || ''}
+                    onChange={handleInputChange}
+                    placeholder="Max price"
+                    className="input w-full"
+                  />
+                </div>
               </div>
             </div>
             
-            {/* Bedrooms */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Bedrooms
-              </label>
-              <select
-                name="bedrooms"
-                value={filters.bedrooms || ''}
-                onChange={handleInputChange}
-                className="select"
-              >
-                <option value="">Any</option>
-                <option value="1">1+</option>
-                <option value="2">2+</option>
-                <option value="3">3+</option>
-                <option value="4">4+</option>
-                <option value="5">5+</option>
-              </select>
-            </div>
-            
-            {/* Property Type */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Property Type
-              </label>
-              <select
-                name="propertyType"
-                value={filters.propertyType || ''}
-                onChange={handleInputChange}
-                className="select"
-              >
-                <option value="">Any</option>
-                <option value="house">House</option>
-                <option value="apartment">Apartment</option>
-                <option value="room">Room</option>
-                <option value="commercial">Commercial</option>
-              </select>
+            {/* Bedrooms & Property Type */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Bed className="h-4 w-4 inline mr-1" />
+                  Bedrooms
+                </label>
+                <select
+                  name="bedrooms"
+                  value={filters.bedrooms || ''}
+                  onChange={handleInputChange}
+                  className="select w-full"
+                >
+                  <option value="">Any</option>
+                  <option value="1">1+</option>
+                  <option value="2">2+</option>
+                  <option value="3">3+</option>
+                  <option value="4">4+</option>
+                  <option value="5">5+</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Home className="h-4 w-4 inline mr-1" />
+                  Property Type
+                </label>
+                <select
+                  name="propertyType"
+                  value={filters.propertyType || ''}
+                  onChange={handleInputChange}
+                  className="select w-full"
+                >
+                  <option value="">Any</option>
+                  <option value="house">House</option>
+                  <option value="apartment">Apartment</option>
+                  <option value="room">Room</option>
+                  <option value="commercial">Commercial</option>
+                </select>
+              </div>
             </div>
             
             {/* Self Contained */}
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="isSelfContained"
-                name="isSelfContained"
-                checked={filters.isSelfContained || false}
-                onChange={handleInputChange}
-                className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
-              />
-              <label htmlFor="isSelfContained" className="ml-2 block text-sm text-gray-700">
-                Self Contained Only
+            <div className="pt-2">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="isSelfContained"
+                  checked={filters.isSelfContained || false}
+                  onChange={handleInputChange}
+                  className="h-5 w-5 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                />
+                <span className="ml-2 block text-sm text-gray-700">
+                  Self Contained Only
+                </span>
               </label>
-            </div>
-            
-            {/* Clear Filters */}
-            <div className="md:col-span-3 flex justify-end mt-2">
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="text-sm text-gray-600 hover:text-red-600 transition-colors flex items-center"
-              >
-                <X className="h-4 w-4 mr-1" />
-                Clear All Filters
-              </button>
             </div>
           </div>
         )}
+        
+        {/* Action Buttons */}
+        <div className="flex space-x-3 pt-6">
+          <button
+            type="submit"
+            className="btn btn-primary flex-1 py-3 font-semibold"
+          >
+            Apply Filters
+          </button>
+          
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="btn btn-outline py-3 px-4"
+            title="Clear all filters"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
       </form>
     </div>
   );

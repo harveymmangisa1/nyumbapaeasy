@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { supabase } from '../lib/supabase';
 
 const InquiryDetailsPage: React.FC = () => {
   const { id } = useParams(); // Inquiry ID from URL
@@ -12,11 +11,15 @@ const InquiryDetailsPage: React.FC = () => {
     const fetchInquiry = async () => {
       setLoading(true);
       try {
-        const inquiryRef = doc(db, 'inquiries', id);
-        const inquirySnap = await getDoc(inquiryRef);
+        const { data, error } = await supabase
+          .from('inquiries')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-        if (inquirySnap.exists()) {
-          setInquiry(inquirySnap.data());
+        if (error) throw error;
+        if (data) {
+          setInquiry(data);
         } else {
           console.error('Inquiry not found');
         }

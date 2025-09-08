@@ -1,15 +1,18 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+
+
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  optimizeDeps: {
-    exclude: ['lucide-react'],
+  server: {
+    sourcemapIgnoreList: (sourcePath, _sourcemapPath) => {
+      // Ignore sourcemap ENOENT errors for lucide-react individual icon files
+      return sourcePath.includes('lucide-react/dist/esm/icons');
+    },
   },
-});
-
-
+})
 
 
 

@@ -14,7 +14,7 @@ const LoginPage: React.FC = () => {
   
   // Update document title
   useEffect(() => {
-    document.title = 'Login | NyumbaPaeasy';
+    document.title = 'Login | NyumbaPaeasy'; 
   }, []);
   
   // Redirect if already authenticated
@@ -37,7 +37,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     // but navigating here immediately provides faster feedback.
     navigate('/');
   } catch (err: any) {
-     // Handle specific errors from Firebase via UserContext
+     
     if (err.message === 'INVALID_CREDENTIALS') {
        setError('Invalid email or password. Please try again.');
     } else {

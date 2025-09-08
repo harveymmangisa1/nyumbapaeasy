@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { Eye, EyeOff, User, Mail, Lock, Check } from 'lucide-react';
 
+
 const RegisterPage: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -50,7 +51,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     // but navigating here immediately provides faster feedback.
     navigate('/');
   } catch (err: any) {
-    // Handle specific errors from Firebase via UserContext
+    
     if (err.message === 'EMAIL_EXISTS') {
       setError('An account with this email already exists.');
     } else if (err.message === 'WEAK_PASSWORD') {

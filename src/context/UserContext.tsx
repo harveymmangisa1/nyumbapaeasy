@@ -1,138 +1,257 @@
 // src/context/UserContext.tsx (Example Structure)
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  User as FirebaseUser, // Rename to avoid conflict with potential custom User type
-  updateProfile
-} from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
-import { initializeApp } from "firebase/app";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDTbzIqfYhPlNOd60tDz_v6jyyS47zlmwM",
-  authDomain: "nyumbapaeasy.firebaseapp.com",
-  projectId: "nyumbapaeasy",
-  storageBucket: "nyumbapaeasy.firebasestorage.app",
-  messagingSenderId: "887603462087",
-  appId: "1:887603462087:web:ca96db0ec9515c7ed023e2",
-  measurementId: "G-RWMVBKJ6C2"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app); // Use getFirestore here
-const auth = getAuth(app); // Initialize Firebase Authentication
+import { supabase } from '../lib/supabase'; // Import your Supabase client
+import { VerificationDocument } from '../types/database';
 
 // Define the shape of your user object including the role
 interface AppUser {
-  id: string; // Firebase UID
+  id: string;
   email: string;
   name: string;
-  role: 'landlord' | 'renter'; // Add role here
+  role: 'landlord' | 'renter' | 'admin';
+  isVerified: boolean;
+  hasPendingVerification: boolean;
+  verificationDocuments: VerificationDocument[];
 }
 
 interface UserContextProps {
   user: AppUser | null;
   isAuthenticated: boolean;
-  isLoading: boolean; // Add loading state for auth check
+  isLoading: boolean;
   register: (name: string, email: string, password: string, role: 'landlord' | 'renter') => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUserVerificationStatus: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextProps | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AppUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Start loading until auth state is checked
+  const [isLoading, setIsLoading] = useState(true); // Set to true initially to load user session
+
+  // Function to fetch user verification status
+  const fetchUserVerificationStatus = async (userId: string) => {
+    try {
+      // Check if user has verified documents
+      const { data: verifiedDocs, error: verifiedError } = await supabase
+        .from('verification_documents')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'verified');
+      
+      if (verifiedError) throw verifiedError;
+      
+      // Check if user has pending documents
+      const { data: pendingDocs, error: pendingError } = await supabase
+        .from('verification_documents')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'pending');
+      
+      if (pendingError) throw pendingError;
+      
+      // Fetch all user documents
+      const { data: allDocs, error: allDocsError } = await supabase
+        .from('verification_documents')
+        .select('*')
+        .eq('user_id', userId)
+        .order('submitted_at', { ascending: false });
+      
+      if (allDocsError) throw allDocsError;
+      
+      return {
+        isVerified: verifiedDocs.length > 0,
+        hasPendingVerification: pendingDocs.length > 0,
+        verificationDocuments: allDocs as VerificationDocument[]
+      };
+    } catch (error) {
+      console.error("Error fetching user verification status:", error);
+      return {
+        isVerified: false,
+        hasPendingVerification: false,
+        verificationDocuments: []
+      };
+    }
+  };
+
+  // Function to refresh user verification status
+  const refreshUserVerificationStatus = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      const verificationStatus = await fetchUserVerificationStatus(user.id);
+      setUser(prevUser => prevUser ? {
+        ...prevUser,
+        ...verificationStatus
+      } : null);
+    } catch (error) {
+      console.error("Error refreshing user verification status:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Function to fetch user profile
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('name, role')
+        .eq('id', userId)
+        .single();
+      
+      if (error) throw error;
+      
+      return {
+        name: data.name || '',
+        role: data.role as 'landlord' | 'renter' | 'admin'
+      };
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      return {
+        name: '',
+        role: 'renter' as 'landlord' | 'renter' | 'admin'
+      };
+    }
+  };
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
-      if (firebaseUser) {
-        // Match Firestore document structure with auth UID
-        setUser({
-          id: firebaseUser.uid, // Critical match
-          email: firebaseUser.email,
-          name: firebaseUser.displayName,
-          role: 'landlord' // Get from your database
-        });
-        setIsAuthenticated(true);
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        // Fetch user profile
+        const profile = await fetchUserProfile(session.user.id);
+        
+        // Fetch verification status
+        const verificationStatus = await fetchUserVerificationStatus(session.user.id);
+        
+        const appUser: AppUser = {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: profile.name,
+          role: profile.role,
+          ...verificationStatus
+        };
+        setUser(appUser);
       } else {
         setUser(null);
-        setIsAuthenticated(false);
       }
+      setIsLoading(false);
     });
-    return () => unsubscribe();
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
-  
+
   const register = async (name: string, email: string, password: string, role: 'landlord' | 'renter') => {
+    setIsLoading(true);
     try {
-      // 1. Create user in Firebase Authentication
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-
-      // 2. Update Firebase Auth profile (optional but good for display name)
-      await updateProfile(firebaseUser, { displayName: name });
-
-      // 3. Create user document in Firestore to store role and other info
-      const userDocRef = doc(db, "users", firebaseUser.uid);
-      await setDoc(userDocRef, {
-        uid: firebaseUser.uid,
-        name: name,
-        email: email,
-        role: role, // Store the selected role!
-        createdAt: new Date(), // Optional: timestamp
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name, role }, // Store name and role in user_metadata initially
+        },
       });
 
-      // No need to setUser here, onAuthStateChanged will handle it
-
-    } catch (error: any) {
-      console.error("Firebase Registration Error:", error);
-      // Throw specific errors for the UI to catch
-      if (error.code === 'auth/email-already-in-use') {
-        throw new Error('EMAIL_EXISTS');
-      } else if (error.code === 'auth/weak-password') {
-        throw new Error('WEAK_PASSWORD');
+      if (error) {
+        throw error;
       }
-      throw new Error('Registration failed'); // Generic fallback
+
+      if (data.user) {
+        // Update profile in database
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ name, role })
+          .eq('id', data.user.id);
+        
+        if (profileError) {
+          console.error("Error updating profile:", profileError);
+        }
+
+        // Fetch verification status
+        const verificationStatus = await fetchUserVerificationStatus(data.user.id);
+        
+        const appUser: AppUser = {
+          id: data.user.id,
+          email: data.user.email || '',
+          name,
+          role,
+          ...verificationStatus
+        };
+        setUser(appUser);
+      }
+    } catch (error: any) {
+      console.error("Registration Error:", error.message);
+      throw new Error(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const login = async (email: string, password: string) => {
+    setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // No need to setUser here, onAuthStateChanged will handle it
-    } catch (error: any) {
-      console.error("Firebase Login Error:", error);
-      // Throw specific errors
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-         throw new Error('INVALID_CREDENTIALS');
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
       }
-      throw new Error('Login failed'); // Generic fallback
+
+      if (data.user) {
+        // Fetch user profile
+        const profile = await fetchUserProfile(data.user.id);
+        
+        // Fetch verification status
+        const verificationStatus = await fetchUserVerificationStatus(data.user.id);
+        
+        const appUser: AppUser = {
+          id: data.user.id,
+          email: data.user.email || '',
+          name: profile.name,
+          role: profile.role,
+          ...verificationStatus
+        };
+        setUser(appUser);
+      }
+    } catch (error: any) {
+      console.error("Login Error:", error.message);
+      throw new Error(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const logout = async () => {
+    setIsLoading(true);
     try {
-      await signOut(auth);
-      // No need to setUser here, onAuthStateChanged will handle it
-    } catch (error) {
-      console.error("Firebase Logout Error:", error);
-      throw new Error('Logout failed');
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
+      }
+      setUser(null);
+    } catch (error: any) {
+      console.error("Logout Error:", error.message);
+      throw new Error(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <UserContext.Provider value={{
       user,
-      isAuthenticated: !!user, // True if user object exists
+      isAuthenticated: !!user,
       isLoading,
       register,
       login,
-      logout
+      logout,
+      refreshUserVerificationStatus
     }}>
       {children}
     </UserContext.Provider>
