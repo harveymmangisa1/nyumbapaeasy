@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUser } from '../context/UserContext';
+import { useAuth } from '../context/AuthContext';
 import VerificationDocumentUpload from '../components/VerificationDocumentUpload';
 
 import { Loader2, CheckCircle, Shield, Clock, XCircle } from 'lucide-react';
 
 const ProfilePage: React.FC = () => {
-  const { user, isAuthenticated, isLoading: authLoading } = useUser();
+  const { user, loading: authLoading, updateProfile } = useAuth();
   const navigate = useNavigate();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  // Removed unused phone state variable
-  const [profilePicture, setProfilePicture] = useState('');
-  const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -23,10 +20,29 @@ const ProfilePage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
+    if (!authLoading && !user) {
       navigate('/login');
+    } else if (user) {
+      setName(user.name);
+      setEmail(user.email || '');
     }
-  }, [isAuthenticated, authLoading, navigate]);
+  }, [user, authLoading, navigate]);
+
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setIsSubmitting(true);
+
+    try {
+      await updateProfile(name);
+      setSuccess('Profile updated successfully!');
+    } catch (err: any) {
+      setError(err.message || 'Failed to update profile.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Verification badge component
   const VerificationBadge = () => {
@@ -58,18 +74,10 @@ const ProfilePage: React.FC = () => {
     );
   };
 
-  if (authLoading || loading) {
+  if (authLoading || !user) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <Loader2 className="h-10 w-10 animate-spin text-emerald-600" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="container mx-auto px-4 py-8 text-center text-red-600">
-        Could not load user data. Please try logging in again.
       </div>
     );
   }
@@ -117,14 +125,37 @@ const ProfilePage: React.FC = () => {
           {/* Profile Information */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Profile Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md text-sm">
+                {success}
+              </div>
+            )}
+            <form onSubmit={handleProfileUpdate} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                <p className="text-gray-900">{user.name}</p>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="input"
+                  required
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <p className="text-gray-900">{user.email}</p>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  className="input bg-gray-100 cursor-not-allowed"
+                  disabled
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
@@ -134,7 +165,16 @@ const ProfilePage: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Member Since</label>
                 <p className="text-gray-900">TODO: Add member since date</p>
               </div>
-            </div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`btn btn-primary ${
+                  isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
+              >
+                {isSubmitting ? 'Updating...' : 'Update Profile'}
+              </button>
+            </form>
           </div>
           
           {/* Verification Document Upload */}

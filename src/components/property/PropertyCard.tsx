@@ -22,7 +22,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
         
         {/* Price Tag */}
         <div className="absolute top-3 left-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-3 py-1.5 text-sm font-bold rounded-lg shadow-lg">
-          MK {property.price.toLocaleString()} {property.type !== 'commercial' ? '/month' : ''}
+          MK {property.price.toLocaleString()} {property.listing_type === 'rent' ? '/month' : ''}
         </div>
         
         {/* Favorite Button */}
@@ -32,7 +32,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
         
         {/* Property Type Badge */}
         <div className="absolute bottom-3 left-3 flex gap-2">
-          {property.isSelfContained && (
+          {property.is_self_contained && (
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs px-2 py-1 rounded-md font-medium shadow-md">
               Self Contained
             </div>

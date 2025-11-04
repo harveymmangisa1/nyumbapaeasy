@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useUser } from '../context/UserContext';
-import { Eye, EyeOff, User, Mail, Lock, Check } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Eye, EyeOff, User, Mail, Lock, Check, Building2, FileText, Briefcase } from 'lucide-react';
 
 
 const RegisterPage: React.FC = () => {
@@ -9,11 +9,14 @@ const RegisterPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<'landlord' | 'renter'>('renter');
+  const [role, setRole] = useState<'landlord' | 'renter' | 'real_estate_agency'>('renter');
+  const [businessRegistrationNumber, setBusinessRegistrationNumber] = useState('');
+  const [licenseNumber, setLicenseNumber] = useState('');
+  const [managerNames, setManagerNames] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { register, isAuthenticated } = useUser();
+  const { signUp, user } = useAuth();
   const navigate = useNavigate();
   
   // Update document title
@@ -23,51 +26,93 @@ const RegisterPage: React.FC = () => {
   
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/');
+    if (user) {
+      // Redirect to appropriate dashboard based on user role
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else if (user.role === 'real_estate_agency') {
+        navigate('/agency/dashboard');
+      } else if (user.role === 'landlord') {
+        navigate('/dashboard');
+      } else {
+        navigate('/');
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [user, navigate]);
   
-  // Inside RegisterPage.tsx
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError('');
-
-  if (password !== confirmPassword) {
-    setError('Passwords do not match');
-    return;
-  }
-  if (password.length < 8) { // Keep basic client-side checks
-    setError('Password must be at least 8 characters long');
-    return;
-  }
-
-  setIsLoading(true);
-
-  try {
-    await register(name, email, password, role);
-    // Navigation is handled by onAuthStateChanged redirecting authenticated users,
-    // but navigating here immediately provides faster feedback.
-    navigate('/');
-  } catch (err: any) {
-    
-    if (err.message === 'EMAIL_EXISTS') {
-      setError('An account with this email already exists.');
-    } else if (err.message === 'WEAK_PASSWORD') {
-      setError('Password is too weak. Please choose a stronger password.');
-    } else {
-      setError('Registration failed. Please try again.');
-      console.error("Registration Submit Error:", err); // Log the actual error
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
     }
-  } finally {
-    setIsLoading(false);
-  }
-};
 
-// ... rest of the component
+    if (password.length < 6) { // Supabase default is 6 characters
+      setError('Password must be at least 6 characters long');
+      return;
+    }
 
-  
+    if (role === 'real_estate_agency') {
+      if (!businessRegistrationNumber.trim()) {
+        setError('Business Registration Number is required.');
+        return;
+      }
+      if (!licenseNumber.trim()) {
+        setError('License Number is required.');
+        return;
+      }
+      if (!managerNames.trim()) {
+        setError('Manager Names are required.');
+        return;
+      }
+    }
+
+    setIsLoading(true);
+
+    try {
+      let agencyDetails = undefined;
+      if (role === 'real_estate_agency') {
+        agencyDetails = {
+          business_registration_number: businessRegistrationNumber,
+          license_number: licenseNumber,
+          manager_names: managerNames,
+        };
+      }
+      await signUp(name, email, password, role, agencyDetails);
+      setIsLoading(false);
+      setError('');
+      
+      // Redirect to appropriate dashboard based on user role
+      if (role === 'admin') {
+        navigate('/admin/dashboard');
+      } else if (role === 'real_estate_agency') {
+        navigate('/agency/dashboard');
+      } else if (role === 'landlord') {
+        navigate('/dashboard');
+      } else {
+        navigate('/');
+      }
+    } catch (err: Error | { message: string }) {
+      setIsLoading(false);
+      console.error('Registration error:', err);
+      
+      // Handle various error types more comprehensively
+      if (err.message === 'EMAIL_EXISTS' || err.message.includes('already exists') || err.message.includes('already registered')) {
+        setError('An account with this email already exists. Please try logging in instead.');
+      } else if (err.message === 'WEAK_PASSWORD' || err.message.includes('Password should be at least')) {
+        setError('Password is too weak. Please choose a stronger password with at least 6 characters.');
+      } else if (err.message.includes('Invalid email')) {
+        setError('Please enter a valid email address.');
+      } else if (err.message.includes('email') && err.message.includes('taken')) {
+        setError('This email address is already registered. Please try logging in or use a different email.');
+      } else {
+        setError('Registration failed: ' + err.message);
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 py-12">
       <div className="container mx-auto px-4">
@@ -84,7 +129,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name
+                  Full Name / Company Name
                 </label>
                 <div className="relative">
                   <input
@@ -94,7 +139,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                     onChange={(e) => setName(e.target.value)}
                     required
                     className="input pl-10"
-                    placeholder="Enter your full name"
+                    placeholder="Enter your full name or company name"
                   />
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 </div>
@@ -169,7 +214,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   I am a:
                 </label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <label 
                     className={`flex items-center justify-center p-3 rounded-md border cursor-pointer ${
                       role === 'renter' 
@@ -204,8 +249,82 @@ const handleSubmit = async (e: React.FormEvent) => {
                     <span className="font-medium">Landlord</span>
                     {role === 'landlord' && <Check className="h-5 w-5 ml-2 text-emerald-600" />}
                   </label>
+                  <label 
+                    className={`flex items-center justify-center p-3 rounded-md border cursor-pointer ${
+                      role === 'real_estate_agency' 
+                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      value="real_estate_agency"
+                      checked={role === 'real_estate_agency'}
+                      onChange={() => setRole('real_estate_agency')}
+                      className="sr-only"
+                    />
+                    <span className="font-medium">Real Estate Agency</span>
+                    {role === 'real_estate_agency' && <Check className="h-5 w-5 ml-2 text-emerald-600" />}
+                  </label>
                 </div>
               </div>
+
+              {role === 'real_estate_agency' && (
+                <div className="space-y-4 mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                  <h3 className="text-lg font-semibold text-gray-800">Agency Details</h3>
+                  <div>
+                    <label htmlFor="businessRegistrationNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                      Business Registration Number
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="businessRegistrationNumber"
+                        type="text"
+                        value={businessRegistrationNumber}
+                        onChange={(e) => setBusinessRegistrationNumber(e.target.value)}
+                        required
+                        className="input pl-10"
+                        placeholder="e.g., BRN123456"
+                      />
+                      <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="licenseNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                      License Number
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="licenseNumber"
+                        type="text"
+                        value={licenseNumber}
+                        onChange={(e) => setLicenseNumber(e.target.value)}
+                        required
+                        className="input pl-10"
+                        placeholder="e.g., LCN789012"
+                      />
+                      <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="managerNames" className="block text-sm font-medium text-gray-700 mb-1">
+                      Manager Names (Comma Separated)
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="managerNames"
+                        type="text"
+                        value={managerNames}
+                        onChange={(e) => setManagerNames(e.target.value)}
+                        required
+                        className="input pl-10"
+                        placeholder="e.g., John Doe, Jane Smith"
+                      />
+                      <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div className="flex items-start">
                 <input

@@ -1,16 +1,44 @@
-// Simple test to verify analytics service functions
 import { analyticsService } from './analyticsService';
 
-// This is a simple test to verify the functions exist and can be called
-console.log('Testing analytics service...');
+jest.mock('../lib/supabase', () => ({
+  supabase: {
+    from: jest.fn(() => ({
+      select: jest.fn(() => ({
+        eq: jest.fn(() => ({
+          single: jest.fn(() => Promise.resolve({ data: {}, error: null })),
+          update: jest.fn(() => Promise.resolve({ error: null })),
+          order: jest.fn(() => ({ limit: jest.fn(() => Promise.resolve({ data: [], error: null })) }))
+        }))
+      })),
+      rpc: jest.fn(() => Promise.resolve({ data: null, error: null }))
+    }))
+  }
+}));
 
-// Test that the service functions exist
-console.log('trackPropertyView function exists:', typeof analyticsService.trackPropertyView === 'function');
-console.log('getPropertyViews function exists:', typeof analyticsService.getPropertyViews === 'function');
-console.log('getLandlordTotalViews function exists:', typeof analyticsService.getLandlordTotalViews === 'function');
-console.log('getPopularProperties function exists:', typeof analyticsService.getPopularProperties === 'function');
-console.log('getPopularPropertiesAdmin function exists:', typeof analyticsService.getPopularPropertiesAdmin === 'function');
-console.log('getLandlordAnalyticsSummary function exists:', typeof analyticsService.getLandlordAnalyticsSummary === 'function');
-console.log('getAdminAnalyticsSummary function exists:', typeof analyticsService.getAdminAnalyticsSummary === 'function');
+describe('Analytics Service', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
-console.log('Analytics service test completed.');
+  describe('trackPropertyView', () => {
+    it('should increment views count for a property', async () => {
+      const mockSupabase = require('../lib/supabase').supabase;
+      
+      mockSupabase.from.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({ data: { views: 5 }, error: null })
+          })
+        }),
+        update: jest.fn().mockReturnValue({
+          eq: jest.fn().mockResolvedValue({ error: null })
+        })
+      });
+      
+      const result = await analyticsService.trackPropertyView('property-123');
+      
+      expect(result.success).toBe(true);
+      expect(mockSupabase.from).toHaveBeenCalledWith('properties');
+    });
+  });
+});

@@ -1,0 +1,18 @@
+DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
+DROP TABLE IF EXISTS public.property_views;
+DROP TABLE IF EXISTS public.verification_documents;
+DROP TABLE IF EXISTS public.properties;
+DROP TABLE IF EXISTS public.profiles;
+DROP TABLE IF EXISTS public.migrations;
+DROP FUNCTION IF EXISTS public.execute_sql;
+DROP FUNCTION IF EXISTS public.is_user_verified;
+DROP FUNCTION IF EXISTS public.is_user_verification_pending;
+DROP FUNCTION IF EXISTS public.update_property_views;
+DROP FUNCTION IF EXISTS public.refresh_property_view_stats;
+DROP FUNCTION IF EXISTS public.get_landlord_analytics_summary;
+DROP FUNCTION IF EXISTS public.get_admin_analytics_summary;
+DROP FUNCTION IF EXISTS public.get_popular_properties;
+DROP FUNCTION IF EXISTS public.get_popular_properties_admin;
+DROP FUNCTION IF EXISTS public.get_views_by_date;
+DROP FUNCTION IF EXISTS public.get_views_by_date_admin;
+DROP FUNCTION IF EXISTS public.update_user_profile;

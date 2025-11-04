@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase';
 
 const PropertyDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { getPropertyById } = useProperties();
+  const { getPropertyById, getSimilarProperties } = useProperties();
   const { isAuthenticated, user } = useUser();
   const [property, setProperty] = useState(getPropertyById(id || ''));
   const [activeImage, setActiveImage] = useState(0);
@@ -16,6 +16,9 @@ const PropertyDetailPage: React.FC = () => {
   const [submitted, setSubmitted] = useState(false);
   const [viewTracked, setViewTracked] = useState(false);
   const navigate = useNavigate();
+  
+  // Get similar properties
+  const similarProperties = property ? getSimilarProperties(property, 4) : [];
   
   // Update document title
   useEffect(() => {
@@ -88,13 +91,30 @@ const PropertyDetailPage: React.FC = () => {
             </h1>
             <div className="flex items-center text-gray-600">
               <MapPin className="h-5 w-5 mr-1 text-emerald-600" />
-              <span>{property.location}, {property.district}</span>
+              <span>
+                {property.location}, {property.district}
+                {property.sector && <span>, {property.sector}</span>}
+              </span>
             </div>
           </div>
-          <div className="mt-4 md:mt-0">
+          <div className="mt-4 md:mt-0 text-right">
             <div className="text-2xl font-bold text-emerald-600">
-              MK {property.price.toLocaleString()}{property.type !== 'commercial' ? '/month' : ''}
+              MK {property.price.toLocaleString()}
+              {property.listing_type === 'rent' && property.payment_cycle && (
+                <span className="text-lg font-medium text-gray-600 ml-1">
+                  /{property.payment_cycle === 'monthly' ? 'month' : 
+                    property.payment_cycle === '2_months' ? '2 months' :
+                    property.payment_cycle === '3_months' ? '3 months' :
+                    property.payment_cycle === '6_months' ? '6 months' :
+                    property.payment_cycle === '12_months' ? 'year' : 'month'}
+                </span>
+              )}
             </div>
+            {property.listing_type && (
+              <div className="text-sm text-gray-600 mt-1">
+                For {property.listing_type === 'rent' ? 'Rent' : 'Sale'}
+              </div>
+            )}
           </div>
         </div>
         
@@ -105,6 +125,10 @@ const PropertyDetailPage: React.FC = () => {
               src={property.images[activeImage]} 
               alt={property.title} 
               className="h-full w-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/api/placeholder/400/300';
+              }}
             />
             
             {/* Image Navigation */}
@@ -144,10 +168,14 @@ const PropertyDetailPage: React.FC = () => {
                   }`}
                   onClick={() => setActiveImage(index)}
                 >
-                  <img 
+                  <img
                     src={image}
                     alt={`Property view ${index + 1}`}
                     className="h-full w-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/api/placeholder/150/150';
+                    }}
                   />
                 </button>
               ))}
@@ -333,7 +361,7 @@ const PropertyDetailPage: React.FC = () => {
                         <span>{property.landlord_contact}</span>
                       </a>
                       <a
-                        href="mailto:landlord@example.com"
+                        href={`mailto:${property.landlord_contact.includes('@') ? property.landlord_contact : 'contact@nyumbapaeasy.com'}?subject=Inquiry about ${property.title}`}
                         className="flex items-center p-2 bg-gray-50 hover:bg-gray-100 rounded-md text-gray-700 transition-colors"
                       >
                         <Mail className="h-5 w-5 mr-3 text-emerald-600" />
@@ -357,6 +385,24 @@ const PropertyDetailPage: React.FC = () => {
                   <span className="text-gray-600">Property Type:</span>
                   <span className="font-medium capitalize">{property.type}</span>
                 </li>
+                {property.listing_type && (
+                  <li className="flex justify-between border-b border-gray-100 pb-2">
+                    <span className="text-gray-600">Listing Type:</span>
+                    <span className="font-medium capitalize">For {property.listing_type}</span>
+                  </li>
+                )}
+                {property.listing_type === 'rent' && property.payment_cycle && (
+                  <li className="flex justify-between border-b border-gray-100 pb-2">
+                    <span className="text-gray-600">Payment Cycle:</span>
+                    <span className="font-medium">
+                      {property.payment_cycle === 'monthly' ? 'Monthly' : 
+                       property.payment_cycle === '2_months' ? 'Every 2 Months' :
+                       property.payment_cycle === '3_months' ? 'Quarterly' :
+                       property.payment_cycle === '6_months' ? 'Every 6 Months' :
+                       property.payment_cycle === '12_months' ? 'Yearly' : 'Monthly'}
+                    </span>
+                  </li>
+                )}
                 <li className="flex justify-between border-b border-gray-100 pb-2">
                   <span className="text-gray-600">Listed On:</span>
                   <span className="font-medium">
@@ -391,6 +437,88 @@ const PropertyDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
+        
+        {/* Similar Properties */}
+        {similarProperties.length > 0 && (
+          <div className="mt-12">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Similar Properties</h2>
+              <p className="text-gray-600">Properties you might also be interested in</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {similarProperties.map((similarProperty) => (
+                <div key={similarProperty.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="relative h-48">
+                    <img 
+                      src={similarProperty.cover_image || similarProperty.images[0]} 
+                      alt={similarProperty.title} 
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/api/placeholder/300/200';
+                      }}
+                    />
+                    {similarProperty.is_featured && (
+                      <div className="absolute top-2 left-2">
+                        <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded font-medium">
+                          Featured
+                        </span>
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2">
+                      <span className="bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                        {similarProperty.listing_type === 'rent' ? 'For Rent' : 'For Sale'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4">
+                    <h3 className="font-semibold text-gray-800 mb-2 text-sm line-clamp-2">
+                      {similarProperty.title}
+                    </h3>
+                    
+                    <div className="flex items-center text-gray-600 mb-2">
+                      <MapPin className="h-3 w-3 mr-1" />
+                      <span className="text-xs">{similarProperty.location}, {similarProperty.district}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-emerald-600 font-bold text-lg">
+                        MK {similarProperty.price.toLocaleString()}
+                        {similarProperty.listing_type === 'rent' && similarProperty.payment_cycle && (
+                          <span className="text-xs text-gray-600 ml-1">
+                            /{similarProperty.payment_cycle === 'monthly' ? 'mo' : 
+                              similarProperty.payment_cycle === '2_months' ? '2mo' :
+                              similarProperty.payment_cycle === '3_months' ? '3mo' :
+                              similarProperty.payment_cycle === '6_months' ? '6mo' :
+                              similarProperty.payment_cycle === '12_months' ? 'yr' : 'mo'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {similarProperty.type !== 'commercial' && (
+                      <div className="flex items-center text-gray-600 text-xs mb-3">
+                        <Bed className="h-3 w-3 mr-1" />
+                        <span className="mr-3">{similarProperty.bedrooms} bed</span>
+                        <Bath className="h-3 w-3 mr-1" />
+                        <span>{similarProperty.bathrooms} bath</span>
+                      </div>
+                    )}
+                    
+                    <Link 
+                      to={`/properties/${similarProperty.id}`}
+                      className="block w-full text-center bg-emerald-600 text-white py-2 px-4 rounded-md hover:bg-emerald-700 transition-colors text-sm font-medium"
+                    >
+                      View Details
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

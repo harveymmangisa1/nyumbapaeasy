@@ -2,25 +2,36 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Home, Users, MessageSquare, Settings, PlusCircle, Edit, Trash2, Eye, Loader2, BarChart3 } from 'lucide-react';
+import { 
+  Home, 
+  Users, 
+  MessageSquare, 
+  PlusCircle, 
+  Edit, 
+  Trash2, 
+  Eye, 
+  Loader2, 
+  BarChart3,
+  Building2,
+  FileText,
+  Briefcase
+} from 'lucide-react';
 import { analyticsService } from '../services/analyticsService';
 
-// Define a more specific type for properties fetched from Supabase
+// Define types for properties and inquiries (same as DashboardPage)
 interface PropertyData {
     id: string;
     title: string;
     type: string;
     price: number;
     location: string;
-    images: string[]; // URLs
-    imageRefs?: string[]; // Optional: Paths in storage for deletion
+    images: string[];
+    imageRefs?: string[];
     views?: number;
     created_at: string;
-    // Add other relevant property fields if needed
-    [key: string]: any; // Allow other properties
+    [key: string]: any;
 }
 
-// Define a type for inquiries
 interface InquiryData {
     id: string;
     isRead: boolean;
@@ -31,47 +42,42 @@ interface InquiryData {
     email: string;
     phone: string;
     propertyId: string;
-    // Add other relevant inquiry fields if needed
-    [key: string]: any; // Allow other properties
+    [key: string]: any;
 }
 
-const DashboardPage: React.FC = () => {
+const AgencyDashboardPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState('properties');
-  const [landlordProperties, setLandlordProperties] = useState<PropertyData[]>([]); // Use specific type
+  const [agencyProperties, setAgencyProperties] = useState<PropertyData[]>([]);
   const [totalViews, setTotalViews] = useState(0);
   const [popularProperties, setPopularProperties] = useState<any[]>([]);
-  const [inquiries, setInquiries] = useState<InquiryData[]>([]); // Use specific type
+  const [inquiries, setInquiries] = useState<InquiryData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deletingPropertyId, setDeletingPropertyId] = useState<string | null>(null); // Track which property is being deleted
+  const [deletingPropertyId, setDeletingPropertyId] = useState<string | null>(null);
 
   // Update document title
   useEffect(() => {
-    document.title = 'Landlord Dashboard | NyumbaPaeasy';
+    document.title = 'Agency Dashboard | NyumbaPaeasy';
   }, []);
 
   useEffect(() => {
     if (!user) {
       navigate('/login');
-    } else if (user?.role === 'real_estate_agency') {
-      navigate('/agency/dashboard');
-    } else if (user?.role === 'admin') {
-      navigate('/admin/dashboard');
-    } else if (user?.role !== 'landlord') {
+    } else if (user?.role !== 'real_estate_agency') {
       navigate('/');
     }
   }, [user, navigate]);
 
-  // Fetch landlord properties and inquiries from Supabase
+  // Fetch agency properties and inquiries from Supabase
   const fetchDashboardData = async () => {
     if (!user?.id) return;
 
     setLoading(true);
 
     try {
-      // Fetch properties owned by the landlord
+      // Fetch properties managed by the agency
       const { data: properties, error: propertiesError } = await supabase
         .from('properties')
         .select('*')
@@ -79,9 +85,9 @@ const DashboardPage: React.FC = () => {
 
       if (propertiesError) throw propertiesError;
 
-      setLandlordProperties(properties as PropertyData[]);
+      setAgencyProperties(properties as PropertyData[]);
 
-      // Calculate total views (assuming 'views' column exists in Supabase)
+      // Calculate total views
       const views = properties.reduce((sum, property) => sum + (property.views || 0), 0);
       setTotalViews(views);
 
@@ -91,7 +97,7 @@ const DashboardPage: React.FC = () => {
         setPopularProperties(popularProps);
       }
 
-      // Fetch inquiries related to the landlord's properties (if any properties exist)
+      // Fetch inquiries related to the agency's properties
       if (properties.length > 0) {
           const propertyIds = properties.map(p => p.id);
           const { data: inquiriesData, error: inquiriesError } = await supabase
@@ -102,12 +108,11 @@ const DashboardPage: React.FC = () => {
           if (inquiriesError) throw inquiriesError;
           setInquiries(inquiriesData as InquiryData[]);
       } else {
-          setInquiries([]); // No properties, so no inquiries
+          setInquiries([]);
       }
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      // Consider adding user-facing error feedback
     } finally {
       setLoading(false);
     }
@@ -118,17 +123,14 @@ const DashboardPage: React.FC = () => {
     if (user?.id) {
         fetchDashboardData();
     }
-  }, [user]); // Re-fetch if user changes
+  }, [user]);
 
-  // --- Action Handlers ---
-
+  // Action Handlers (same as DashboardPage)
   const handleViewProperty = (propertyId: string) => {
     navigate(`/properties/${propertyId}`);
   };
 
   const handleEditProperty = (propertyId: string) => {
-    // Navigate to an edit page (assuming the route is /edit-property/:id)
-    // You'll need to create this page/route separately.
     navigate(`/edit-property/${propertyId}`);
   };
 
@@ -137,45 +139,39 @@ const DashboardPage: React.FC = () => {
       return;
     }
 
-    setDeletingPropertyId(propertyToDelete.id); // Indicate deletion is in progress
+    setDeletingPropertyId(propertyToDelete.id);
 
     try {
-      // 1. Delete Supabase document
+      // Delete Supabase document
       const { error: deleteError } = await supabase
         .from('properties')
         .delete()
         .eq('id', propertyToDelete.id);
 
       if (deleteError) throw deleteError;
-      console.log(`Property document ${propertyToDelete.id} deleted.`);
 
-      // 2. Delete associated images from Supabase Storage (if imageRefs exist)
+      // Delete associated images from Supabase Storage
       if (propertyToDelete.imageRefs && propertyToDelete.imageRefs.length > 0) {
         const { error: storageError } = await supabase
           .storage
           .from('property-images')
-          .remove(propertyToDelete.imageRefs); // imageRefs should be the full paths
+          .remove(propertyToDelete.imageRefs);
 
         if (storageError) {
           console.error("Error deleting images from storage:", storageError);
-          // Note: The property document is already deleted, but images might remain.
-          // Consider how to handle this case (e.g., alert user, log for manual cleanup)
-        } else {
-          console.log(`Deleted ${propertyToDelete.imageRefs.length} images from storage.`);
         }
       }
 
-      // 3. Update local state to remove the deleted property
-      setLandlordProperties(prev => prev.filter(property => property.id !== propertyToDelete.id));
-      setInquiries(prev => prev.filter(inquiry => inquiry.propertyId !== propertyToDelete.id)); // Also remove related inquiries
+      // Update local state
+      setAgencyProperties(prev => prev.filter(property => property.id !== propertyToDelete.id));
+      setInquiries(prev => prev.filter(inquiry => inquiry.propertyId !== propertyToDelete.id));
 
-      // 4. Show success feedback (optional)
       alert(`"${propertyToDelete.title}" has been successfully deleted.`);
     } catch (error) {
       console.error("Error deleting property:", error);
       alert("An error occurred while deleting the property. Please try again.");
     } finally {
-      setDeletingPropertyId(null); // Reset deletion state
+      setDeletingPropertyId(null);
     }
   };
 
@@ -184,7 +180,7 @@ const DashboardPage: React.FC = () => {
       <div className="min-h-screen bg-gray-100 py-12 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-emerald-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading your dashboard...</p>
+          <p className="text-gray-600">Loading your agency dashboard...</p>
         </div>
       </div>
     );
@@ -196,8 +192,29 @@ const DashboardPage: React.FC = () => {
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Landlord Dashboard</h1>
-            <p className="text-gray-600 mt-2">Manage your properties and view analytics</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Real Estate Agency Dashboard</h1>
+            <p className="text-gray-600 mt-2">Manage your property portfolio and client inquiries</p>
+            {/* Display Agency Details */}
+            <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200">
+              <div className="flex items-center mb-2">
+                <Building2 className="h-5 w-5 text-emerald-600 mr-2" />
+                <span className="font-medium text-gray-800">{user?.name}</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                <div className="flex items-center">
+                  <FileText className="h-4 w-4 mr-2" />
+                  <span>Reg: {user?.business_registration_number || 'N/A'}</span>
+                </div>
+                <div className="flex items-center">
+                  <FileText className="h-4 w-4 mr-2" />
+                  <span>License: {user?.license_number || 'N/A'}</span>
+                </div>
+                <div className="flex items-center">
+                  <Briefcase className="h-4 w-4 mr-2" />
+                  <span>Managers: {user?.manager_names || 'N/A'}</span>
+                </div>
+              </div>
+            </div>
           </div>
           <button
             onClick={() => navigate('/add-property')}
@@ -210,15 +227,14 @@ const DashboardPage: React.FC = () => {
 
         {/* Dashboard Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Stat Cards */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center">
               <div className="rounded-full bg-emerald-100 p-3 mr-4">
                 <Home className="h-6 w-6 text-emerald-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Listed Properties</p>
-                <p className="text-2xl font-bold text-gray-800">{landlordProperties.length}</p>
+                <p className="text-sm text-gray-500">Properties Under Management</p>
+                <p className="text-2xl font-bold text-gray-800">{agencyProperties.length}</p>
               </div>
             </div>
           </div>
@@ -252,7 +268,7 @@ const DashboardPage: React.FC = () => {
                 <MessageSquare className="h-6 w-6 text-orange-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Inquiries</p>
+                <p className="text-sm text-gray-500">Client Inquiries</p>
                 <p className="text-2xl font-bold text-gray-800">{inquiries.length}</p>
               </div>
             </div>
@@ -262,7 +278,7 @@ const DashboardPage: React.FC = () => {
         {/* Popular Properties */}
         {popularProperties.length > 0 && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Your Most Popular Properties</h2>
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Most Popular Properties</h2>
             <div className="space-y-4">
               {popularProperties.map((property, index) => (
                 <div key={property.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-md">
@@ -298,7 +314,7 @@ const DashboardPage: React.FC = () => {
             }`}
             onClick={() => setActiveTab('properties')}
           >
-            My Properties
+            Property Portfolio
           </button>
           <button
             className={`py-2 px-4 font-medium text-sm ${
@@ -308,15 +324,15 @@ const DashboardPage: React.FC = () => {
             }`}
             onClick={() => setActiveTab('inquiries')}
           >
-            Inquiries
+            Client Inquiries
           </button>
         </div>
 
-        {/* Tab Content */}
+        {/* Tab Content - Reusing the same structure as DashboardPage */}
         <div>
           {activeTab === 'properties' && (
             <div>
-              {landlordProperties.length > 0 ? (
+              {agencyProperties.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead>
@@ -331,7 +347,7 @@ const DashboardPage: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {landlordProperties.map((property, index) => (
+                      {agencyProperties.map((property, index) => (
                         <tr key={property.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100`}>
                           <td className="px-4 py-3">
                             <div className="flex items-center">
@@ -371,7 +387,6 @@ const DashboardPage: React.FC = () => {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex space-x-2 items-center">
-                              {/* View Button */}
                               <button
                                 onClick={() => handleViewProperty(property.id)}
                                 className="p-1 text-gray-500 hover:text-blue-600 disabled:opacity-50"
@@ -380,7 +395,6 @@ const DashboardPage: React.FC = () => {
                               >
                                 <Eye className="h-4 w-4" />
                               </button>
-                              {/* Edit Button */}
                               <button
                                 onClick={() => handleEditProperty(property.id)}
                                 className="p-1 text-gray-500 hover:text-emerald-600 disabled:opacity-50"
@@ -389,7 +403,6 @@ const DashboardPage: React.FC = () => {
                               >
                                 <Edit className="h-4 w-4" />
                               </button>
-                              {/* Delete Button */}
                               <button
                                 onClick={() => handleDeleteProperty(property)}
                                 className={`p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 ${deletingPropertyId === property.id ? 'cursor-wait' : ''}`}
@@ -411,10 +424,10 @@ const DashboardPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <Home className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                  <h3 className="text-lg font-medium text-gray-800 mb-2">No Properties Listed Yet</h3>
+                  <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <h3 className="text-lg font-medium text-gray-800 mb-2">No Properties in Portfolio Yet</h3>
                   <p className="text-gray-600 mb-4">
-                    You haven't listed any properties yet. Click the button below to add your first property.
+                    Start building your property portfolio by adding your first property listing.
                   </p>
                   <button
                     onClick={() => navigate('/add-property')}
@@ -435,9 +448,9 @@ const DashboardPage: React.FC = () => {
                     <div key={inquiry.id} className="bg-white rounded-lg shadow-md p-6">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
                         <div>
-                          <h3 className="text-lg font-medium text-gray-800">{inquiry.propertyTitle}</h3>
-                          <p className="text-gray-600">From: {inquiry.from}</p>
-                          <p className="text-gray-500 text-sm">{new Date(inquiry.date).toLocaleDateString()}</p>
+                            <h3 className="text-lg font-medium text-gray-800">{inquiry.propertyTitle}</h3>
+                            <p className="text-gray-600">From: {inquiry.from}</p>
+                            <p className="text-gray-500 text-sm">{new Date(inquiry.date).toLocaleDateString()}</p>
                         </div>
                         {!inquiry.isRead && (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 self-start sm:self-center">
@@ -451,9 +464,8 @@ const DashboardPage: React.FC = () => {
                           <span className="block sm:inline-block mr-4">Email: <a href={`mailto:${inquiry.email}`} className="text-blue-600 hover:underline">{inquiry.email || 'N/A'}</a></span>
                           <span className="block sm:inline-block">Phone: <a href={`tel:${inquiry.phone}`} className="text-blue-600 hover:underline">{inquiry.phone || 'N/A'}</a></span>
                         </div>
-                        {/* Add Reply/Mark as Read functionality here if needed */}
                         <button className="btn btn-sm btn-outline text-emerald-600 hover:bg-emerald-50 hover:border-emerald-500 self-start sm:self-center">
-                          Mark as Read {/* Or Reply */}
+                          Mark as Read
                         </button>
                       </div>
                     </div>
@@ -462,7 +474,7 @@ const DashboardPage: React.FC = () => {
               ) : (
                 <div className="text-center py-8">
                   <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                  <h3 className="text-lg font-medium text-gray-800 mb-2">No Inquiries Yet</h3>
+                  <h3 className="text-lg font-medium text-gray-800 mb-2">No Client Inquiries Yet</h3>
                   <p className="text-gray-600">
                     You haven't received any inquiries about your properties yet.
                   </p>
@@ -476,4 +488,4 @@ const DashboardPage: React.FC = () => {
   );
 };
 
-export default DashboardPage;
+export default AgencyDashboardPage;

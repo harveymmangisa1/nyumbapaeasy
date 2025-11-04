@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUser } from '../context/UserContext';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -30,7 +30,7 @@ interface VerificationDocument {
 }
 
 const AdminVerificationPage: React.FC = () => {
-  const { user, isAuthenticated } = useUser();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [documents, setDocuments] = useState<VerificationDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,12 +43,11 @@ const AdminVerificationPage: React.FC = () => {
     document.title = 'Admin Verification | NyumbaPaeasy';
   }, []);
 
-  // Check if user is admin
   useEffect(() => {
-    if (isAuthenticated && user && user.role !== 'admin') {
+    if (user && user.role !== 'admin') {
       navigate('/');
     }
-  }, [user, isAuthenticated, navigate]);
+  }, [user, navigate]);
 
   // Fetch verification documents
   useEffect(() => {

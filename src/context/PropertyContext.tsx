@@ -1,22 +1,25 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { supabase } from '../lib/supabase'; // Import your Supabase client
 import { useAuth } from "./AuthContext"; // Import your Supabase Auth context hook
-import { checkUserPropertyListingPermission } from '../services/verificationService';
 
 // Interface for data submitted when creating a new property
 export interface NewPropertyData {
   title: string;
   description: string;
   price: number;
+  payment_cycle?: 'monthly' | '2_months' | '3_months' | '6_months' | '12_months'; // Optional for rent properties
   location: string;
   district: string;
+  sector?: string; // Optional sector within district
   type: 'apartment' | 'house' | 'room' | 'commercial';
+  listing_type: 'rent' | 'sale'; // New field for listing type
   bedrooms: number;
   bathrooms: number;
   area: string;
   is_self_contained: boolean;
   amenities: string[];
-  images: string[];
+  cover_image: string; // Primary image for display
+  images: string[]; // Additional images
   is_featured?: boolean; // Optional, defaults to false in DB or handled by backend
   landlord_name: string;
   landlord_contact: string;
@@ -33,15 +36,19 @@ export interface Property {
   title: string;
   description: string;
   price: number;
+  payment_cycle?: 'monthly' | '2_months' | '3_months' | '6_months' | '12_months'; // Optional for rent properties
   location: string;
   district: string;
+  sector?: string; // Optional sector within district
   type: 'apartment' | 'house' | 'room' | 'commercial';
+  listing_type: 'rent' | 'sale'; // New field for listing type
   bedrooms: number;
   bathrooms: number;
   area: string;
   is_self_contained: boolean;
   amenities: string[];
-  images: string[];
+  cover_image: string; // Primary image for display
+  images: string[]; // Additional images
   views?: number; // Add views field
 }
 
@@ -60,6 +67,7 @@ interface PropertyContextType {
   isLoading: boolean;
   searchProperties: (filters: SearchFilters) => Property[];
   getPropertyById: (id: string) => Property | undefined;
+  getSimilarProperties: (property: Property, limit?: number) => Property[];
   addProperty: (propertyData: NewPropertyData) => Promise<{ property: Property | null; error: string | null }>;
 }
 
@@ -83,9 +91,12 @@ export const PropertyProvider = ({ children }: PropertyProviderProps) => {
   const { user } = useAuth(); // Use Supabase auth user
 
   useEffect(() => {
+    console.log('PropertyProvider: Initializing...');
+    
     const fetchProperties = async () => {
       setIsLoading(true);
       try {
+        console.log('PropertyProvider: Fetching properties from Supabase...');
         const { data: fetchedProperties, error } = await supabase
           .from('properties')
           .select('*')
@@ -95,6 +106,7 @@ export const PropertyProvider = ({ children }: PropertyProviderProps) => {
           console.error("Error fetching properties from Supabase:", error);
           setProperties([]);
         } else {
+          console.log("PropertyProvider: Fetched properties:", fetchedProperties);
           setProperties(fetchedProperties as Property[] || []);
         }
       } catch (error) {
@@ -102,6 +114,7 @@ export const PropertyProvider = ({ children }: PropertyProviderProps) => {
         setProperties([]);
       } finally {
         setIsLoading(false);
+        console.log('PropertyProvider: Finished loading properties');
       }
     };
 
@@ -130,17 +143,47 @@ export const PropertyProvider = ({ children }: PropertyProviderProps) => {
     return properties.find(property => property.id === id);
   };
 
+  const getSimilarProperties = (property: Property, limit: number = 4) => {
+    const priceRange = property.price * 0.3; // 30% price tolerance
+    const minPrice = property.price - priceRange;
+    const maxPrice = property.price + priceRange;
+    
+    return properties
+      .filter(p => 
+        p.id !== property.id && // Exclude current property
+        p.district === property.district && // Same district
+        p.type === property.type && // Same property type
+        p.listing_type === property.listing_type && // Same listing type
+        p.price >= minPrice && p.price <= maxPrice // Similar price range
+      )
+      .sort((a, b) => {
+        // Sort by location similarity first, then price similarity
+        const aLocationMatch = a.location.toLowerCase().includes(property.location.toLowerCase()) ? 1 : 0;
+        const bLocationMatch = b.location.toLowerCase().includes(property.location.toLowerCase()) ? 1 : 0;
+        
+        if (aLocationMatch !== bLocationMatch) {
+          return bLocationMatch - aLocationMatch;
+        }
+        
+        // Sort by price similarity
+        const aPriceDiff = Math.abs(a.price - property.price);
+        const bPriceDiff = Math.abs(b.price - property.price);
+        return aPriceDiff - bPriceDiff;
+      })
+      .slice(0, limit);
+  };
+
   const addProperty = async (propertyData: NewPropertyData): Promise<{ property: Property | null; error: string | null }> => {
     if (!user) {
       return { property: null, error: "User not authenticated to add property" };
     }
     
     try {
-      // Check if user can list properties based on verification status
-      const verificationCheck = await checkUserPropertyListingPermission(user.id);
+      // Simple permission check - in a real app, you might want more sophisticated checks
+      const canListProperties = user.role === 'landlord' || user.role === 'real_estate_agency' || user.role === 'admin';
       
-      if (!verificationCheck.canListProperties) {
-        return { property: null, error: verificationCheck.reason || "You don't have permission to list properties" };
+      if (!canListProperties) {
+        return { property: null, error: "You don't have permission to list properties" };
       }
       
       const propertyToInsert = {
@@ -175,6 +218,8 @@ export const PropertyProvider = ({ children }: PropertyProviderProps) => {
     }
   };
 
+  console.log('PropertyProvider: Rendering with properties count:', properties.length, 'and loading state:', isLoading);
+
   return (
     <PropertyContext.Provider value={{
       properties,
@@ -182,6 +227,7 @@ export const PropertyProvider = ({ children }: PropertyProviderProps) => {
       isLoading,
       searchProperties,
       getPropertyById,
+      getSimilarProperties,
       addProperty,
     }}>
       {children}

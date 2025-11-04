@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Home, User, PlusCircle, LogOut, CheckCircle, Clock, XCircle, Shield, BarChart3, ChevronDown, Building, Info, FileText } from 'lucide-react';
-import { useUser } from '../../context/UserContext';
+import { useAuth } from '../../context/AuthContext';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
   const [isLegalOpen, setIsLegalOpen] = useState(false);
-  const { user, isAuthenticated, logout } = useUser();
+  const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -34,7 +34,7 @@ const Header: React.FC = () => {
   }, [location]);
   
   const handleLogout = () => {
-    logout();
+    signOut();
     navigate('/');
   };
   
@@ -201,7 +201,7 @@ const Header: React.FC = () => {
               )}
             </div>
             
-            {isAuthenticated && user?.role === 'landlord' && (
+            {!!user && user?.role === 'landlord' && (
               <Link 
                 to="/dashboard" 
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${
@@ -214,7 +214,7 @@ const Header: React.FC = () => {
                 Dashboard
               </Link>
             )}
-            {isAuthenticated && (user?.role === 'landlord' || user?.role === 'admin') && (
+            {!!user && (user?.role === 'landlord' || user?.role === 'admin') && (
               <Link 
                 to="/profile" 
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${
@@ -227,7 +227,7 @@ const Header: React.FC = () => {
                My Profile
               </Link>
             )}
-            {isAuthenticated && user?.role === 'admin' && (
+            {!!user && user?.role === 'admin' && (
               <>
                 <Link 
                   to="/admin/dashboard" 
@@ -257,7 +257,7 @@ const Header: React.FC = () => {
           
           {/* Desktop User Menu */}
           <div className="hidden md:flex items-center space-x-3">
-            {isAuthenticated ? (
+            {!!user ? (
               <div className="flex items-center space-x-3">
                 {(user?.role === 'landlord' || user?.role === 'admin') && (
                   <Link to="/add-property" className="btn btn-primary flex items-center space-x-1 text-sm py-2 px-3">
@@ -412,7 +412,7 @@ const Header: React.FC = () => {
                 )}
               </div>
               
-              {isAuthenticated && (user?.role === 'landlord' || user?.role === 'admin') && (
+              {!!user && (user?.role === 'landlord' || user?.role === 'admin') && (
                 <>
                   <Link 
                     to="/dashboard" 
@@ -445,7 +445,7 @@ const Header: React.FC = () => {
                 </>
               )}
               
-              {isAuthenticated && user?.role === 'admin' && (
+              {!!user && user?.role === 'admin' && (
                 <>
                   <Link 
                     to="/admin/dashboard" 
@@ -468,7 +468,7 @@ const Header: React.FC = () => {
                 </>
               )}
               
-              {isAuthenticated ? (
+              {!!user ? (
                 <button 
                   onClick={handleLogout}
                   className="text-base font-medium p-3 rounded-lg text-red-600 hover:bg-red-50 flex items-center"

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUser } from '../context/UserContext';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Upload, FileText, CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react';
 
@@ -8,7 +8,7 @@ interface VerificationDocumentUploadProps {
 }
 
 const VerificationDocumentUpload: React.FC<VerificationDocumentUploadProps> = ({ onUploadComplete }) => {
-  const { user, refreshUserVerificationStatus } = useUser();
+  const { user, refreshUserVerificationStatus } = useAuth();
   const [documentType, setDocumentType] = useState<'business_license' | 'property_deed' | 'national_id' | 'other'>('business_license');
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);

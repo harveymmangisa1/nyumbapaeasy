@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useUser } from '../context/UserContext';
+import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
@@ -9,7 +9,7 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, isAuthenticated } = useUser();
+  const { signIn, user } = useAuth();
   const navigate = useNavigate();
   
   // Update document title
@@ -19,35 +19,34 @@ const LoginPage: React.FC = () => {
   
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/');
+    if (user) {
+      // Redirect to appropriate dashboard based on user role
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else if (user.role === 'real_estate_agency') {
+        navigate('/agency/dashboard');
+      } else if (user.role === 'landlord') {
+        navigate('/dashboard');
+      } else {
+        navigate('/');
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [user, navigate]);
   
-  // Inside LoginPage.tsx
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError('');
-  setIsLoading(true);
-
-  try {
-    await login(email, password);
-    // Navigation is handled by onAuthStateChanged redirecting authenticated users,
-    // but navigating here immediately provides faster feedback.
-    navigate('/');
-  } catch (err: any) {
-     
-    if (err.message === 'INVALID_CREDENTIALS') {
-       setError('Invalid email or password. Please try again.');
-    } else {
-       setError('Login failed. Please check your connection or try again later.');
-       console.error("Login Submit Error:", err); // Log the actual error
+    try {
+      await signIn(email, password);
+      // Redirect will be handled by the useEffect above based on user role
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
 // ... rest of the component
 
@@ -111,7 +110,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   </button>
                 </div>
                 <div className="mt-1 text-right">
-                  <a href="#" className="text-sm text-emerald-600 hover:text-emerald-700">
+                  <a href="/forgot-password" className="text-sm text-emerald-600 hover:text-emerald-700">
                     Forgot password?
                   </a>
                 </div>

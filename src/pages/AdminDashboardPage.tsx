@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useUser } from '../context/UserContext';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { 
   Users, 
@@ -48,7 +48,7 @@ interface DocumentData {
 }
 
 const AdminDashboardPage: React.FC = () => {
-  const { user } = useUser();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [totalUsers, setTotalUsers] = useState(0);
   const [totalProperties, setTotalProperties] = useState(0);

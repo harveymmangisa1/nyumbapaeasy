@@ -2,7 +2,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'landlord' | 'renter';
+  role: 'admin' | 'landlord' | 'renter' | 'real_estate_agency';
   created_at: string;
 }
 
@@ -37,7 +37,10 @@ export interface VerificationDocument {
 export interface Profile {
   id: string;
   name: string;
-  role: 'admin' | 'landlord' | 'renter';
+  role: 'admin' | 'landlord' | 'renter' | 'real_estate_agency';
+  business_registration_number?: string | null;
+  license_number?: string | null;
+  manager_names?: string | null;
   created_at: string;
   updated_at: string;
 }
