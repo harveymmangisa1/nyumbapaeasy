@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Session, User as SupabaseUser } from '@supabase/supabase-js';
+import { Session, User as SupabaseUser, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
 // Define the structure of a user profile
@@ -23,9 +23,9 @@ interface AuthContextType {
   user: AppUser | null;
   session: Session | null;
   loading: boolean;
-  login: (email: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>; // Renamed login to signIn and added password
   logout: () => Promise<void>;
-  sendPasswordReset: (email: string) => Promise<{ error: Error | null }>;
+  sendPasswordReset: (email: string) => Promise<{ error: AuthError | null }>;
 }
 
 // Create the context
@@ -34,13 +34,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Helper function to get user profile from Supabase
 const getProfile = async (userId: string): Promise<UserProfile | null> => {
   try {
-    const { data, status } = await supabase
+    const { data, error, status } = await supabase
       .from('profiles')
       .select(`*`)
       .eq('id', userId)
       .single();
 
-    if (status !== 406) {
+    if (error && status !== 406) { // 406 is returned by PostgREST when no rows are found with .single()
+      console.error('Error fetching profile:', error);
       return null;
     }
 
@@ -49,6 +50,7 @@ const getProfile = async (userId: string): Promise<UserProfile | null> => {
     }
     return null;
   } catch (error) {
+    console.error('Catastrophic error fetching profile:', error);
     return null;
   }
 };
@@ -57,7 +59,7 @@ const getProfile = async (userId: string): Promise<UserProfile | null> => {
 const createProfile = async (userId: string, email?: string): Promise<UserProfile | null> => {
   try {
     const username = email?.split('@')[0]; // Basic username from email
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .insert([
         {
@@ -70,14 +72,17 @@ const createProfile = async (userId: string, email?: string): Promise<UserProfil
       .single();
 
     if (error) {
+        console.error('Error creating profile:', error);
       return null;
     }
 
     return data as UserProfile;
   } catch (error) {
+    console.error('Catastrophic error creating profile:', error);
     return null;
   }
 };
+
 
 // AuthProvider component
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -90,6 +95,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     let profile = await getProfile(sessionUser.id);
 
     if (!profile) {
+      // Create profile if it doesn't exist, e.g., for a new user
       profile = await createProfile(sessionUser.id, sessionUser.email);
     }
 
@@ -100,12 +106,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       };
       return appUser;
     }
-
+    
+    console.warn("Could not find or create a profile for user:", sessionUser.id);
     return null;
   };
 
   useEffect(() => {
     const getInitialSession = async () => {
+      setLoading(true);
       const { data: { session: initialSession } } = await supabase.auth.getSession();
       setSession(initialSession);
 
@@ -119,6 +127,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     getInitialSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      setLoading(true);
       setSession(newSession);
       if (newSession?.user) {
         const appUser = await fetchUser(newSession.user);
@@ -134,12 +143,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, []);
 
-  const login = async (email: string) => {
-    const { error } = await supabase.auth.signInWithOtp({ email });
-    if (error) {
-      return { error };
-    }
-    return { error: null };
+  // Changed to signInWithPassword
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error };
   };
 
   const logout = async () => {
@@ -151,22 +158,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    if (error) {
-      return { error };
-    }
-    return { error: null };
+    return { error };
   };
 
   const value = {
     user,
     session,
     loading,
-    login,
+    signIn, // Use signIn
     logout,
     sendPasswordReset,
   };
 
-  return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 // Custom hook to use the Auth context
