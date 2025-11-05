@@ -8,7 +8,7 @@ const ForgotPasswordPage: React.FC = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { resetPassword } = useAuth();
+  const { sendPasswordReset } = useAuth();
 
   useEffect(() => {
     document.title = 'Forgot Password | NyumbaPaeasy';
@@ -21,7 +21,7 @@ const ForgotPasswordPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await resetPassword(email);
+      await sendPasswordReset(email);
       setMessage('Password reset email sent! Check your inbox (and spam folder).');
     } catch (err: unknown) {
       setError(err.message || 'Failed to send reset email. Please try again.');
