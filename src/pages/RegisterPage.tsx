@@ -266,9 +266,10 @@ const RegisterPage = () => {
         if ((role === 'landlord' || role === 'real_estate_agency') && !skipVerification) {
           await uploadVerificationDocuments(data.user.id);
         }
+        
+        // Redirect to OTP verification page
+        navigate('/verify-email', { state: { email: formData.email } });
       }
-
-      setRegistrationSuccess(true);
     } catch (err) {
       console.error('Registration error:', err);
       setError('An unexpected error occurred during registration.');

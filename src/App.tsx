@@ -22,6 +22,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import AgencyDashboardPage from './pages/AgencyDashboardPage';
 import WelcomePage from './pages/WelcomePage';
 import AuthCallbackPage from './pages/AuthCallbackPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 import { AuthProvider } from './context/AuthContext';
 
 import AnalyticsPage from './pages/AnalyticsPage';
@@ -44,6 +45,7 @@ function App() {
                     <Route path="/properties/:id" element={<PropertyDetailPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/verify-email" element={<VerifyEmailPage />} />
                     <Route path="/auth/callback" element={<AuthCallbackPage />} />
                     <Route path="/welcome" element={<WelcomePage />} />
                     <Route path="/dashboard" element={<DashboardPage />} />
