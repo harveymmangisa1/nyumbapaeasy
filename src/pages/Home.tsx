@@ -1,6 +1,8 @@
+
 import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useProperties } from '../context/PropertyContext';
+import { useAuth } from '../context/AuthContext';
 import HeroSection from '../components/home/HeroSection';
 import FeaturedProperties from '../components/home/FeaturedProperties';
 import HowItWorks from '../components/home/HowItWorks';
@@ -10,10 +12,47 @@ import PropertyCard from '../components/property/PropertyCard';
 const HomePage: React.FC = () => {
   const { properties, isLoading } = useProperties();
   const recentProperties = !isLoading && properties.length > 0 ? properties.slice(0, 6) : [];
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     document.title = 'NyumbaPaeasy - Find Your Perfect Home in Malawi';
   }, []);
+
+  // Handle auth callback
+  useEffect(() => {
+    // Check if there is a hash in the URL, which indicates an auth callback
+    if (location.hash.includes('access_token') || location.hash.includes('error')) {
+      // The AuthProvider will handle the session from the URL hash.
+      // Once the user object is available, we can redirect.
+      if (user) {
+        const role = user.profile?.role;
+        if (role === 'admin') {
+          navigate('/admin/dashboard');
+        } else if (role === 'real_estate_agency') {
+          navigate('/agency/dashboard');
+        } else if (role === 'landlord') {
+          navigate('/dashboard');
+        } else {
+          navigate('/welcome');
+        }
+      }
+    }
+  }, [location.hash, user, navigate]);
+
+  // If it's an auth callback, show a loading indicator instead of the full page.
+  if (location.hash.includes('access_token') || location.hash.includes('error')) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-accent mb-4" />
+          <h1 className="text-2xl font-semibold">Authenticating...</h1>
+          <p className="text-slate-600">Please wait while we log you in.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

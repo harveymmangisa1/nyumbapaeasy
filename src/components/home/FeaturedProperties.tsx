@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Star, Home } from 'lucide-react';
+import { ChevronRight, Star } from 'lucide-react';
 import PropertyCard from '../property/PropertyCard';
-import { useProperties } from '../../context/PropertyContext';
+import { useProperties } from '../../hooks/useProperties';
 
 const FeaturedProperties: React.FC = () => {
   const { featuredProperties, isLoading } = useProperties();

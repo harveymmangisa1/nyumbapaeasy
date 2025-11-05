@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Home, User, PlusCircle, LogOut, CheckCircle, Clock, XCircle, Building, ChevronDown } from 'lucide-react';
+import { Menu, X, Home, User, PlusCircle, LogOut, CheckCircle, Clock, Building, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const Header: React.FC = () => {

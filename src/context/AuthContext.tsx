@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import { Session, User as SupabaseUser, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
@@ -28,38 +28,30 @@ interface AuthContextType {
   sendPasswordReset: (email: string) => Promise<{ error: AuthError | null }>;
 }
 
-// Create the context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Helper function to get user profile from Supabase
 const getProfile = async (userId: string): Promise<UserProfile | null> => {
   try {
-    const { data, error, status } = await supabase
+    const { data, status } = await supabase
       .from('profiles')
       .select(`*`)
       .eq('id', userId)
       .single();
 
-    if (error && status !== 406) { // 406 is returned by PostgREST when no rows are found with .single()
-      console.error('Error fetching profile:', error);
+    if (status !== 406) { // 406 is returned by PostgREST when no rows are found with .single()
       return null;
     }
-
-    if (data) {
-      return data as UserProfile;
-    }
-    return null;
+    return data as UserProfile;
   } catch (error) {
-    console.error('Catastrophic error fetching profile:', error);
+    console.error('Error fetching profile:', error);
     return null;
   }
 };
-
-// Helper function to create a user profile
 const createProfile = async (userId: string, email?: string): Promise<UserProfile | null> => {
   try {
     const username = email?.split('@')[0]; // Basic username from email
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('profiles')
       .insert([
         {
@@ -71,8 +63,8 @@ const createProfile = async (userId: string, email?: string): Promise<UserProfil
       .select()
       .single();
 
-    if (error) {
-        console.error('Error creating profile:', error);
+    if (!data) {
+        console.error('Error creating profile:');
       return null;
     }
 
@@ -173,7 +165,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Custom hook to use the Auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

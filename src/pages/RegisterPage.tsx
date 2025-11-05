@@ -8,12 +8,24 @@ import {
 import { supabase } from '../lib/supabase';
 import FileUploadBox from '../components/FileUploadBox';
 
+
 interface PasswordValidation {
   length: boolean;
   uppercase: boolean;
   lowercase: boolean;
   number: boolean;
   special: boolean;
+}
+
+interface VerificationState {
+  nationalId: string;
+  nationalIdFile: File | null;
+  proofOfOwnership: File | null;
+  businessRegistrationNumber: string;
+  businessRegFile: File | null;
+  licenseNumber: string;
+  licenseFile: File | null;
+  managerNames: string;
 }
 
 const RegisterPage = () => {
@@ -28,14 +40,14 @@ const RegisterPage = () => {
   const [role, setRole] = useState<'renter' | 'landlord' | 'real_estate_agency'>('renter');
   
   // Verification states
-  const [verification, setVerification] = useState({
+  const [verification, setVerification] = useState<VerificationState>({
     nationalId: '',
-    nationalIdFile: null as File | null,
-    proofOfOwnership: null as File | null,
+    nationalIdFile: null,
+    proofOfOwnership: null,
     businessRegistrationNumber: '',
-    businessRegFile: null as File | null,
+    businessRegFile: null,
     licenseNumber: '',
-    licenseFile: null as File | null,
+    licenseFile: null,
     managerNames: '',
   });
   
@@ -62,8 +74,8 @@ const RegisterPage = () => {
   };
 
   // Update verification data
-  const updateVerification = (field: keyof typeof verification, value: any) => {
-    setVerification(prev => ({ ...prev, [field]: value }));
+  const updateVerification = (field: keyof typeof verification, value: unknown) => {
+    setVerification(prev => ({ ...prev, [field]: value as any }));
   };
 
   // Password validation
@@ -392,11 +404,11 @@ const RegisterPage = () => {
     value: string;
     label: string;
     description: string;
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   }) => (
     <button
       type="button"
-      onClick={() => setRole(value as any)}
+      onClick={() => setRole(value as 'renter' | 'landlord' | 'real_estate_agency')}
       className={`p-4 rounded-xl border-2 text-left transition-all duration-200 ${
         role === value
           ? 'border-slate-900 bg-slate-900 text-white shadow-sm'

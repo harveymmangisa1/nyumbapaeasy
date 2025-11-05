@@ -49,7 +49,7 @@ describe('Analytics Service', () => {
             single: jest.fn().mockResolvedValue({ data: { views: 10 }, error: null })
           })
         })
-      } as any);
+      });
       
       const result = await analyticsService.getPropertyViews('property-123');
       
@@ -64,7 +64,7 @@ describe('Analytics Service', () => {
             single: jest.fn().mockResolvedValue({ data: null, error: null })
           })
         })
-      } as any);
+      });
       
       const result = await analyticsService.getPropertyViews('property-123');
       
@@ -78,7 +78,7 @@ describe('Analytics Service', () => {
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockResolvedValue({ data: [{ views: 5 }, { views: 10 }, { views: 15 }], error: null })
         })
-      } as any);
+      });
       
       const result = await analyticsService.getLandlordTotalViews('landlord-123');
       

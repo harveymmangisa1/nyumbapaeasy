@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import PropertyCard from '../components/property/PropertyCard';
 import PropertyFilter from '../components/property/PropertyFilter';
@@ -12,14 +12,14 @@ const PropertyListingPage: React.FC = () => {
   const [isGridView, setIsGridView] = useState(true);
   
   // Get initial filters from URL params
-  const initialFilters: SearchFilters = {
+  const initialFilters: SearchFilters = useMemo(() => ({
     location: searchParams.get('location') || undefined,
     minPrice: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined,
     maxPrice: searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined,
     bedrooms: searchParams.get('bedrooms') ? Number(searchParams.get('bedrooms')) : undefined,
     propertyType: searchParams.get('type') || undefined,
     isSelfContained: searchParams.get('isSelfContained') === 'true' ? true : undefined,
-  };
+  }), [searchParams]);
   
   // Update document title
   useEffect(() => {
@@ -27,7 +27,7 @@ const PropertyListingPage: React.FC = () => {
   }, []);
   
   // Apply filters and update URL
-  const handleFilter = (filters: SearchFilters) => {
+  const handleFilter = useCallback((filters: SearchFilters) => {
     // Update URL with filters
     const newSearchParams = new URLSearchParams();
     
@@ -43,12 +43,12 @@ const PropertyListingPage: React.FC = () => {
     // Search properties
     const results = searchProperties(filters);
     setFilteredProperties(results);
-  };
+  }, [searchProperties, setSearchParams]);
   
   // Initialize search based on URL params
   useEffect(() => {
     handleFilter(initialFilters);
-  }, []);
+  }, [handleFilter, initialFilters]);
   
   return (
     <div className="bg-gradient-to-b from-gray-50 to-white min-h-screen py-8">

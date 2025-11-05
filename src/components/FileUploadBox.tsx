@@ -3,12 +3,11 @@ import { Upload, FileText, X } from 'lucide-react';
 
 interface FileUploadBoxProps {
   file: File | null;
-  onUpload: (e: React.ChangeEvent<HTMLInputElement>, setter: (file: File | null) => void) => void;
-  onRemove: (setter: (file: File | null) => void) => void;
+  onUpload: (file: File) => void;
+  onRemove: () => void;
   accept: string;
   label: string;
   description: string;
-  setter: (file: File | null) => void;
 }
 
 const FileUploadBox: React.FC<FileUploadBoxProps> = ({
@@ -18,43 +17,59 @@ const FileUploadBox: React.FC<FileUploadBoxProps> = ({
   accept,
   label,
   description,
-  setter,
 }) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      onUpload(e.target.files[0]);
+    }
+  };
+
   return (
     <div>
       <label className="block text-sm font-medium text-slate-700 mb-2">{label}</label>
-      {!file ? (
-        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
-          <div className="flex flex-col items-center justify-center py-4">
-            <Upload className="h-8 w-8 text-slate-400 mb-2" />
-            <p className="text-sm text-slate-600 font-medium">Click to upload</p>
-            <p className="text-xs text-slate-500 mt-1">{description}</p>
-          </div>
-          <input
-            type="file"
-            className="hidden"
-            accept={accept}
-            onChange={(e) => onUpload(e, setter)}
-          />
-        </label>
-      ) : (
-        <div className="flex items-center justify-between p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-          <div className="flex items-center gap-3">
-            <FileText className="h-5 w-5 text-emerald-600" />
-            <div>
-              <p className="text-sm font-medium text-slate-900">{file.name}</p>
-              <p className="text-xs text-slate-500">{(file.size / 1024).toFixed(1)} KB</p>
+      <div className="flex items-center gap-4">
+        <div className="flex-1">
+          <div className="w-full bg-white rounded-xl border-2 border-dashed border-slate-200 hover:border-slate-300 transition-all text-center p-6 cursor-pointer relative">
+            <input
+              type="file"
+              accept={accept}
+              onChange={handleFileChange}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            <div className="flex flex-col items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                <Upload className="h-6 w-6 text-slate-500" />
+              </div>
+              <p className="text-sm font-semibold text-slate-900 mb-1">
+                {file ? 'File selected' : 'Click to upload'}
+              </p>
+              <p className="text-xs text-slate-500">{description}</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => onRemove(setter)}
-            className="text-slate-400 hover:text-red-600 transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
         </div>
-      )}
+        {file && (
+          <div className="flex-shrink-0 w-48 bg-slate-50 rounded-lg p-3 border border-slate-200">
+            <div className="flex items-start">
+              <FileText className="h-5 w-5 text-slate-500 mt-0.5 flex-shrink-0" />
+              <div className="ml-2 overflow-hidden">
+                <p className="text-sm text-slate-800 font-medium truncate" title={file.name}>
+                  {file.name}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {(file.size / 1024).toFixed(1)} KB
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onRemove}
+                className="ml-2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

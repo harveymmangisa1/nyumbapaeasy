@@ -1,21 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { useProperties } from '../context/PropertyContext';
 import { useUser } from '../context/UserContext';
 import { MapPin, User, Phone, Mail, Bed, Bath, Square, Heart, Share, ArrowLeft, Check, X } from 'lucide-react';
 import { analyticsService } from '../services/analyticsService';
-import { supabase } from '../lib/supabase';
 
 const PropertyDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { getPropertyById, getSimilarProperties } = useProperties();
-  const { isAuthenticated, user } = useUser();
-  const [property, setProperty] = useState(getPropertyById(id || ''));
+  const { isAuthenticated } = useUser();
+  const [property] = useState(getPropertyById(id || ''));
   const [activeImage, setActiveImage] = useState(0);
   const [showContact, setShowContact] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [viewTracked, setViewTracked] = useState(false);
-  const navigate = useNavigate();
   
   // Get similar properties
   const similarProperties = property ? getSimilarProperties(property, 4) : [];
@@ -35,9 +33,9 @@ const PropertyDetailPage: React.FC = () => {
       trackPropertyView();
       setViewTracked(true);
     }
-  }, [property, viewTracked]);
+  }, [property, viewTracked, trackPropertyView]);
   
-  const trackPropertyView = async () => {
+  const trackPropertyView = useCallback(async () => {
     if (!property) return;
     
     try {
@@ -46,7 +44,7 @@ const PropertyDetailPage: React.FC = () => {
     } catch (error) {
       console.error('Error tracking property view:', error);
     }
-  };
+  }, [property]);
   
   if (!property) {
     return (

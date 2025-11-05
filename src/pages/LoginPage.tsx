@@ -41,8 +41,8 @@ const LoginPage: React.FC = () => {
     try {
       await signIn(email, password);
       // Redirect will be handled by the useEffect above based on user role
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setIsLoading(false);
     }

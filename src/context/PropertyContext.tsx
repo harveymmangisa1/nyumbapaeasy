@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, ReactNode, useEffect, useContext } from 'react';
 import { supabase } from '../lib/supabase'; // Import your Supabase client
 import { useAuth } from "./AuthContext"; // Import your Supabase Auth context hook
 
@@ -72,14 +72,6 @@ interface PropertyContextType {
 }
 
 const PropertyContext = createContext<PropertyContextType | undefined>(undefined);
-
-export const useProperties = () => {
-  const context = useContext(PropertyContext);
-  if (context === undefined) {
-    throw new Error('useProperties must be used within a PropertyProvider');
-  }
-  return context;
-};
 
 interface PropertyProviderProps {
   children: ReactNode;
@@ -176,7 +168,7 @@ export const PropertyProvider = ({ children }: PropertyProviderProps) => {
     
     try {
       // Simple permission check - in a real app, you might want more sophisticated checks
-      const canListProperties = user.role === 'landlord' || user.role === 'real_estate_agency' || user.role === 'admin';
+      const canListProperties = user.profile?.role === 'landlord' || user.profile?.role === 'real_estate_agency' || user.profile?.role === 'admin';
       
       if (!canListProperties) {
         return { property: null, error: "You don't have permission to list properties" };
@@ -228,6 +220,14 @@ export const PropertyProvider = ({ children }: PropertyProviderProps) => {
       {children}
     </PropertyContext.Provider>
   );
+};
+
+export const useProperties = () => {
+  const context = useContext(PropertyContext);
+  if (context === undefined) {
+    throw new Error('useProperties must be used within a PropertyProvider');
+  }
+  return context;
 };
 
 export default PropertyContext;

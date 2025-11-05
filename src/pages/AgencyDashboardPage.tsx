@@ -29,7 +29,6 @@ interface PropertyData {
     imageRefs?: string[];
     views?: number;
     created_at: string;
-    [key: string]: any;
 }
 
 interface InquiryData {
@@ -69,60 +68,58 @@ const AgencyDashboardPage: React.FC = () => {
     }
   }, [user, navigate]);
 
-  // Fetch agency properties and inquiries from Supabase
-  const fetchDashboardData = async () => {
-    if (!user?.id) return;
-
-    setLoading(true);
-
-    try {
-      // Fetch properties managed by the agency
-      const { data: properties, error: propertiesError } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('landlord_id', user.id);
-
-      if (propertiesError) throw propertiesError;
-
-      setAgencyProperties(properties as PropertyData[]);
-
-      // Calculate total views
-      const views = properties.reduce((sum, property) => sum + (property.views || 0), 0);
-      setTotalViews(views);
-
-      // Fetch popular properties
-      const { properties: popularProps, error: popularError } = await analyticsService.getPopularProperties(user.id);
-      if (!popularError) {
-        setPopularProperties(popularProps);
-      }
-
-      // Fetch inquiries related to the agency's properties
-      if (properties.length > 0) {
-          const propertyIds = properties.map(p => p.id);
-          const { data: inquiriesData, error: inquiriesError } = await supabase
-            .from('inquiries')
-            .select('*')
-            .in('propertyId', propertyIds);
-
-          if (inquiriesError) throw inquiriesError;
-          setInquiries(inquiriesData as InquiryData[]);
-      } else {
-          setInquiries([]);
-      }
-
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Initial fetch
   useEffect(() => {
+    const fetchDashboardData = async () => {
+        if (!user?.id) return;
+
+        setLoading(true);
+
+        try {
+          // Fetch properties managed by the agency
+          const { data: properties, error: propertiesError } = await supabase
+            .from('properties')
+            .select('*')
+            .eq('landlord_id', user.id);
+
+          if (propertiesError) throw propertiesError;
+
+          setAgencyProperties(properties as PropertyData[]);
+
+          // Calculate total views
+          const views = properties.reduce((sum, property) => sum + (property.views || 0), 0);
+          setTotalViews(views);
+
+          // Fetch popular properties
+          const { properties: popularProps, error: popularError } = await analyticsService.getPopularProperties(user.id);
+          if (!popularError) {
+            setPopularProperties(popularProps);
+          }
+
+          // Fetch inquiries related to the agency's properties
+          if (properties.length > 0) {
+              const propertyIds = properties.map(p => p.id);
+              const { data: inquiriesData, error: inquiriesError } = await supabase
+                .from('inquiries')
+                .select('*')
+                .in('propertyId', propertyIds);
+
+              if (inquiriesError) throw inquiriesError;
+              setInquiries(inquiriesData as InquiryData[]);
+          } else {
+              setInquiries([]);
+          }
+
+        } catch (error) {
+          console.error('Error fetching dashboard data:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
     if (user?.id) {
         fetchDashboardData();
     }
-  }, [user, fetchDashboardData]);
+  }, [user]);
 
   // Action Handlers (same as DashboardPage)
   const handleViewProperty = (propertyId: string) => {

@@ -7,11 +7,11 @@ export type DatabaseError = {
 }
 
 // Generic function to handle database errors
-const handleError = (error: any): DatabaseError => {
+const handleError = (error: unknown): DatabaseError => {
   console.error('Database error:', error)
   return {
-    message: error.message || 'An error occurred',
-    code: error.code
+    message: error instanceof Error ? error.message : 'An unknown error occurred',
+    code: (error as { code?: string }).code // Keep code if it exists on the error object
   }
 }
 
@@ -94,7 +94,7 @@ export const databaseService = {
   },
 
   // Custom query
-  async query<T>(table: string, query: any) {
+  async query<T>(table: string, query: Record<string, unknown>) {
     try {
       const { data, error } = await supabase
         .from(table)

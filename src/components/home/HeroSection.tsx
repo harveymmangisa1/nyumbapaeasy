@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Search, Bed, Building, DollarSign, Filter, X } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 
 const HeroSection = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
-  const [listingType, setListingType] = useState('rent');
   const [propertyType, setPropertyType] = useState('');
   const [bedrooms, setBedrooms] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -22,7 +21,7 @@ const HeroSection = () => {
 
   const quickSearch = (query: string) => {
     setSearchQuery(query);
-    handleSearch(new Event('submit') as any);
+    handleSearch(new Event('submit', { cancelable: true }));
   };
 
   return (

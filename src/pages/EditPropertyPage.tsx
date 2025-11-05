@@ -219,6 +219,7 @@ const EditPropertyPage: React.FC = () => {
       });
 
       const uploadedImageUrls = await Promise.all(uploadPromises);
+      setImages((prevImages) => [...prevImages, ...uploadedImageUrls]);
     } catch (err: unknown) {
       setImageUploadError(err.message || 'Failed to upload image(s). Please try again.');
       console.error('Image upload error:', err);
