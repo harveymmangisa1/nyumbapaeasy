@@ -50,21 +50,21 @@ const getProfile = async (userId: string): Promise<UserProfile | null> => {
 };
 const createProfile = async (userId: string, email?: string): Promise<UserProfile | null> => {
   try {
-    const username = email?.split('@')[0]; // Basic username from email
-    const { data } = await supabase
+    const name = email?.split('@')[0]; // Basic name from email
+    const { data, error } = await supabase
       .from('profiles')
       .insert([
         {
           id: userId,
-          username,
-          role: 'user', // Default role
+          name,
+          role: 'renter', // Default role
         },
       ])
       .select()
       .single();
 
-    if (!data) {
-        console.error('Error creating profile:');
+    if (error) {
+      console.error('Error creating profile:', error);
       return null;
     }
 
