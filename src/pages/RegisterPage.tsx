@@ -247,7 +247,7 @@ const RegisterPage = () => {
               manager_names: verification.managerNames,
             }),
           },
-          emailRedirectTo: `${window.location.origin}/welcome`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
