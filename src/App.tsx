@@ -1,4 +1,4 @@
-import React from 'react';
+continueimport React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
@@ -22,6 +22,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import AgencyDashboardPage from './pages/AgencyDashboardPage';
 import WelcomePage from './pages/WelcomePage';
 import { AuthProvider } from './context/AuthContext';
+import AuthCallbackPage from './pages/AuthCallbackPage';
 
 import AnalyticsPage from './pages/AnalyticsPage';
 // Policy pages
@@ -44,6 +45,7 @@ function App() {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/welcome" element={<WelcomePage />} />
+                     <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
                     <Route path="/dashboard" element={<DashboardPage />} /> {/* Protected route logic inside component */}
                     <Route path="/agency/dashboard" element={<AgencyDashboardPage />} /> {/* Agency dashboard */}
