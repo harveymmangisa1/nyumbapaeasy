@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, X, Filter, ChevronDown, ChevronUp, DollarSign, Home, Bed, Bath } from 'lucide-react';
+import { Search, X, Filter, ChevronDown, ChevronUp, DollarSign, Home, Bed } from 'lucide-react';
 import { SearchFilters } from '../../context/PropertyContext';
 
 interface PropertyFilterProps {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Star, Home, MapPin } from 'lucide-react';
+import { ChevronRight, Star, Home } from 'lucide-react';
 import PropertyCard from '../property/PropertyCard';
 import { useProperties } from '../../context/PropertyContext';
 

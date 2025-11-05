@@ -1,40 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Home, User, PlusCircle, LogOut, CheckCircle, Clock, XCircle, Shield, BarChart3, ChevronDown, Building, Info, FileText } from 'lucide-react';
+import { Menu, X, Home, User, PlusCircle, LogOut, CheckCircle, Clock, XCircle, Building, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
-  const [isLegalOpen, setIsLegalOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   
   // Handle scroll effect for header
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 50) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 20);
     };
     
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   
-  // Close mobile menu when changing routes
+  // Close menus when changing routes
   useEffect(() => {
     setIsMenuOpen(false);
     setIsResourcesOpen(false);
-    setIsLegalOpen(false);
   }, [location]);
   
   const handleLogout = () => {
-    signOut();
+    logout();
     navigate('/');
   };
   
@@ -42,71 +36,73 @@ const Header: React.FC = () => {
   const VerificationBadge = () => {
     if (!user) return null;
     
-    if (user.isVerified) {
+    if (user.profile.is_verified) {
       return (
-        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 ml-2">
-          <CheckCircle className="h-3 w-3 mr-1" />
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <CheckCircle className="-ml-0.5 mr-1.5 h-4 w-4" />
           Verified
         </span>
       );
     }
     
-    if (user.hasPendingVerification) {
+    if (user.profile.has_pending_verification) {
       return (
-        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 ml-2">
-          <Clock className="h-3 w-3 mr-1" />
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+          <Clock className="-ml-0.5 mr-1.5 h-4 w-4" />
           Pending
         </span>
       );
     }
     
-    if (user.role === 'landlord' || user.role === 'admin') {
+    if (user.profile.role === 'landlord' || user.profile.role === 'admin') {
       return (
-        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 ml-2">
-          <XCircle className="h-3 w-3 mr-1" />
+        <Link to="/verify" className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200">
+          <XCircle className="-ml-0.5 mr-1.5 h-4 w-4" />
           Not Verified
-        </span>
+        </Link>
       );
     }
     
     return null;
   };
-  
+
   return (
-    <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-      isScrolled ? 'bg-white shadow-lg' : 'bg-white/90 backdrop-blur-sm'
+    <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+      isScrolled 
+        ? 'bg-white/95 backdrop-blur-lg shadow-sm border-b border-gray-100' 
+        : 'bg-white/90 backdrop-blur-md'
     }`}>
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16 md:h-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="bg-emerald-600 p-1.5 rounded-lg">
-              <Home className="h-6 w-6 text-white" />
+          <Link to="/" className="flex items-center space-x-3 group">
+            <div className="flex items-center justify-center w-8 h-8 bg-gray-900 rounded-lg group-hover:bg-gray-800 transition-colors">
+              <Home className="h-4 w-4 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-800">NyumbaPaeasy</span>
+            <span className="text-xl font-semibold text-gray-900 tracking-tight">NyumbaPaeasy</span>
           </Link>
           
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
+          <nav className="hidden lg:flex items-center space-x-1">
             <Link 
               to="/" 
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 location.pathname === '/' 
-                  ? 'bg-emerald-50 text-emerald-600' 
-                  : 'text-gray-700 hover:bg-gray-100'
+                  ? 'text-gray-900 bg-gray-100' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
               Home
             </Link>
             <Link 
               to="/properties" 
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center ${
                 location.pathname.startsWith('/properties') 
-                  ? 'bg-emerald-50 text-emerald-600' 
-                  : 'text-gray-700 hover:bg-gray-100'
+                  ? 'text-gray-900 bg-gray-100' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
-              <Building className="h-4 w-4 mr-1" />
+              <Building className="h-4 w-4 mr-2" />
               Properties
             </Link>
             
@@ -114,184 +110,133 @@ const Header: React.FC = () => {
             <div className="relative">
               <button 
                 onClick={() => setIsResourcesOpen(!isResourcesOpen)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center transition-all duration-200 ${
                   isResourcesOpen 
-                    ? 'bg-emerald-50 text-emerald-600' 
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'text-gray-900 bg-gray-100' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
-                <Info className="h-4 w-4 mr-1" />
                 Resources
-                <ChevronDown className={`ml-1 h-4 w-4 transition-transform ${isResourcesOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`ml-1 h-4 w-4 transition-transform duration-200 ${
+                  isResourcesOpen ? 'rotate-180' : ''
+                }`} />
               </button>
               
               {isResourcesOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 z-50 border border-gray-200">
+                <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
                   <Link 
                     to="/about" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg mx-2"
-                    onClick={() => setIsResourcesOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
                   >
                     About Us
                   </Link>
                   <Link 
                     to="/faq" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg mx-2"
-                    onClick={() => setIsResourcesOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
                   >
                     FAQ
                   </Link>
                   <Link 
                     to="/contact" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg mx-2"
-                    onClick={() => setIsResourcesOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
                   >
                     Contact
                   </Link>
-                </div>
-              )}
-            </div>
-            
-            {/* Legal Dropdown */}
-            <div className="relative">
-              <button 
-                onClick={() => setIsLegalOpen(!isLegalOpen)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center transition-colors ${
-                  isLegalOpen 
-                    ? 'bg-emerald-50 text-emerald-600' 
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <FileText className="h-4 w-4 mr-1" />
-                Legal
-                <ChevronDown className={`ml-1 h-4 w-4 transition-transform ${isLegalOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {isLegalOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 z-50 border border-gray-200">
+                  <div className="border-t border-gray-100 my-1"></div>
                   <Link 
                     to="/terms" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg mx-2"
-                    onClick={() => setIsLegalOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
                   >
                     Terms & Conditions
                   </Link>
                   <Link 
                     to="/privacy" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg mx-2"
-                    onClick={() => setIsLegalOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
                   >
                     Privacy Policy
-                  </Link>
-                  <Link 
-                    to="/cookies" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg mx-2"
-                    onClick={() => setIsLegalOpen(false)}
-                  >
-                    Cookie Policy
-                  </Link>
-                  <Link 
-                    to="/use-policy" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg mx-2"
-                    onClick={() => setIsLegalOpen(false)}
-                  >
-                    Use Policy
                   </Link>
                 </div>
               )}
             </div>
-            
-            {!!user && user?.role === 'landlord' && (
-              <Link 
-                to="/dashboard" 
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${
-                  location.pathname === '/dashboard' 
-                    ? 'bg-emerald-50 text-emerald-600' 
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <Shield className="h-4 w-4 mr-1" />
-                Dashboard
-              </Link>
-            )}
-            {!!user && (user?.role === 'landlord' || user?.role === 'admin') && (
-              <Link 
-                to="/profile" 
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${
-                  location.pathname === '/profile' 
-                    ? 'bg-emerald-50 text-emerald-600' 
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-               <User className="h-4 w-4 mr-1" />
-               My Profile
-              </Link>
-            )}
-            {!!user && user?.role === 'admin' && (
-              <>
-                <Link 
-                  to="/admin/dashboard" 
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${
-                    location.pathname === '/admin/dashboard' 
-                      ? 'bg-emerald-50 text-emerald-600' 
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <Shield className="h-4 w-4 mr-1" />
-                  Admin
-                </Link>
-                <Link 
-                  to="/analytics" 
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center ${
-                    location.pathname === '/analytics' 
-                      ? 'bg-emerald-50 text-emerald-600' 
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <BarChart3 className="h-4 w-4 mr-1" />
-                  Analytics
-                </Link>
-              </>
-            )}
           </nav>
           
           {/* Desktop User Menu */}
-          <div className="hidden md:flex items-center space-x-3">
-            {!!user ? (
-              <div className="flex items-center space-x-3">
-                {(user?.role === 'landlord' || user?.role === 'admin') && (
-                  <Link to="/add-property" className="btn btn-primary flex items-center space-x-1 text-sm py-2 px-3">
+          <div className="hidden lg:flex items-center space-x-3">
+            {user ? (
+              <div className="flex items-center space-x-4">
+                {(user.profile.role === 'landlord' || user.profile.role === 'admin') && (
+                  <Link 
+                    to="/add-property" 
+                    className="flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+                  >
                     <PlusCircle className="h-4 w-4" />
-                    <span>Add Property</span>
+                    <span>List Property</span>
                   </Link>
                 )}
-                <div className="flex items-center space-x-2">
-                  <div className="h-9 w-9 rounded-full bg-emerald-100 flex items-center justify-center overflow-hidden">
-                    <User className="h-5 w-5 text-emerald-600" />
-                  </div>
-                  <div className="flex flex-col">
-                    <div className="flex items-center">
-                      <span className="text-sm font-medium text-gray-700">{user?.name}</span>
-                      <VerificationBadge />
+                
+                <div className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                      <User className="h-4 w-4 text-gray-600" />
                     </div>
-                    <span className="text-xs text-gray-500 capitalize">{user?.role}</span>
+                    <div className="flex flex-col items-start">
+                      <div className="flex items-center">
+                        <span className="text-sm font-medium text-gray-900">{user.name}</span>
+                        <VerificationBadge />
+                      </div>
+                      <span className="text-xs text-gray-500 capitalize">{user.profile.role}</span>
+                    </div>
+                  </div>
+                  
+                  {/* User dropdown menu */}
+                  <div className="relative">
+                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                    <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                      <Link 
+                        to="/profile" 
+                        className="block px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                      >
+                        My Profile
+                      </Link>
+                      {(user.profile.role === 'landlord' || user.profile.role === 'admin') && (
+                        <Link 
+                          to="/dashboard" 
+                          className="block px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                        >
+                          Dashboard
+                        </Link>
+                      )}
+                      {user.profile.role === 'admin' && (
+                        <Link 
+                          to="/admin/dashboard" 
+                          className="block px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                        >
+                          Admin
+                        </Link>
+                      )}
+                      <button 
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
+                      >
+                        Logout
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <button 
-                  onClick={handleLogout}
-                  className="text-sm font-medium text-gray-700 hover:text-red-600 transition-colors flex items-center space-x-1 py-2 px-3 rounded-lg hover:bg-gray-100"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
-                </button>
               </div>
             ) : (
               <div className="flex items-center space-x-3">
-                <Link to="/login" className="btn btn-outline text-sm py-2 px-4">
+                <Link 
+                  to="/login" 
+                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                >
                   Login
                 </Link>
-                <Link to="/register" className="btn btn-primary text-sm py-2 px-4">
-                  Register
+                <Link 
+                  to="/register" 
+                  className="px-4 py-2 text-sm font-medium text-gray-900 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Sign Up
                 </Link>
               </div>
             )}
@@ -299,194 +244,147 @@ const Header: React.FC = () => {
           
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 focus:outline-none"
+            className="lg:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
-            {isMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
+            {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
       
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-200 animate-fade-in">
-          <div className="container mx-auto px-4 py-3">
-            <nav className="flex flex-col space-y-2">
-              <Link 
-                to="/" 
-                className={`text-base font-medium p-3 rounded-lg ${
-                  location.pathname === '/' ? 'bg-emerald-50 text-emerald-600' : 'text-gray-700 hover:bg-gray-100'
-                }`}
+        <div className="lg:hidden bg-white border-t border-gray-100 animate-in slide-in-from-top duration-200">
+          <div className="px-4 py-3 space-y-1">
+            <Link 
+              to="/" 
+              className="block px-3 py-2 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Home
+            </Link>
+            <Link 
+              to="/properties" 
+              className="block px-3 py-2 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-50 transition-colors flex items-center"
+            >
+              <Building className="h-4 w-4 mr-3" />
+              Properties
+            </Link>
+            
+            {/* Mobile Resources */}
+            <div>
+              <button 
+                onClick={() => setIsResourcesOpen(!isResourcesOpen)}
+                className="w-full flex items-center justify-between px-3 py-2 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                Home
-              </Link>
-              <Link 
-                to="/properties" 
-                className={`text-base font-medium p-3 rounded-lg flex items-center ${
-                  location.pathname.startsWith('/properties') ? 'bg-emerald-50 text-emerald-600' : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <Building className="h-5 w-5 mr-2" />
-                Properties
-              </Link>
-              
-              {/* Mobile Resources */}
-              <div>
-                <button 
-                  onClick={() => setIsResourcesOpen(!isResourcesOpen)}
-                  className="w-full text-left text-base font-medium p-3 rounded-lg text-gray-700 hover:bg-gray-100 flex justify-between items-center"
-                >
-                  <span className="flex items-center">
-                    <Info className="h-5 w-5 mr-2" />
-                    Resources
-                  </span>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${isResourcesOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {isResourcesOpen && (
-                  <div className="pl-4 space-y-1 mt-1">
-                    <Link 
-                      to="/about" 
-                      className="block text-base font-medium p-3 rounded-lg text-gray-700 hover:bg-gray-100"
-                    >
-                      About Us
-                    </Link>
-                    <Link 
-                      to="/faq" 
-                      className="block text-base font-medium p-3 rounded-lg text-gray-700 hover:bg-gray-100"
-                    >
-                      FAQ
-                    </Link>
-                    <Link 
-                      to="/contact" 
-                      className="block text-base font-medium p-3 rounded-lg text-gray-700 hover:bg-gray-100"
-                    >
-                      Contact
-                    </Link>
-                  </div>
-                )}
-              </div>
-              
-              {/* Mobile Legal */}
-              <div>
-                <button 
-                  onClick={() => setIsLegalOpen(!isLegalOpen)}
-                  className="w-full text-left text-base font-medium p-3 rounded-lg text-gray-700 hover:bg-gray-100 flex justify-between items-center"
-                >
-                  <span className="flex items-center">
-                    <FileText className="h-5 w-5 mr-2" />
-                    Legal
-                  </span>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${isLegalOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {isLegalOpen && (
-                  <div className="pl-4 space-y-1 mt-1">
-                    <Link 
-                      to="/terms" 
-                      className="block text-base font-medium p-3 rounded-lg text-gray-700 hover:bg-gray-100"
-                    >
-                      Terms & Conditions
-                    </Link>
-                    <Link 
-                      to="/privacy" 
-                      className="block text-base font-medium p-3 rounded-lg text-gray-700 hover:bg-gray-100"
-                    >
-                      Privacy Policy
-                    </Link>
-                    <Link 
-                      to="/cookies" 
-                      className="block text-base font-medium p-3 rounded-lg text-gray-700 hover:bg-gray-100"
-                    >
-                      Cookie Policy
-                    </Link>
-                    <Link 
-                      to="/use-policy" 
-                      className="block text-base font-medium p-3 rounded-lg text-gray-700 hover:bg-gray-100"
-                    >
-                      Use Policy
-                    </Link>
-                  </div>
-                )}
-              </div>
-              
-              {!!user && (user?.role === 'landlord' || user?.role === 'admin') && (
-                <>
+                Resources
+                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${
+                  isResourcesOpen ? 'rotate-180' : ''
+                }`} />
+              </button>
+              {isResourcesOpen && (
+                <div className="pl-6 space-y-1 mt-1">
                   <Link 
-                    to="/dashboard" 
-                    className={`text-base font-medium p-3 rounded-lg flex items-center ${
-                      location.pathname === '/dashboard' ? 'bg-emerald-50 text-emerald-600' : 'text-gray-700 hover:bg-gray-100'
-                    }`}
+                    to="/about" 
+                    className="block px-3 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    <Shield className="h-5 w-5 mr-2" />
-                    Dashboard
+                    About Us
                   </Link>
                   <Link 
-                    to="/add-property" 
-                    className="text-base font-medium p-3 rounded-lg bg-emerald-100 text-emerald-700 flex items-center"
+                    to="/faq" 
+                    className="block px-3 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    <PlusCircle className="h-5 w-5 mr-2" />
-                    Add Property
+                    FAQ
                   </Link>
                   <Link 
-                    to="/profile" 
-                    className={`text-base font-medium p-3 rounded-lg flex items-center ${
-                      location.pathname === '/profile' ? 'bg-emerald-50 text-emerald-600' : 'text-gray-700 hover:bg-gray-100'
-                    }`}
+                    to="/contact" 
+                    className="block px-3 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    <User className="h-5 w-5 mr-2" />
-                    <div className="flex items-center">
-                      <span>My Profile</span>
-                      <VerificationBadge />
-                    </div>
-                  </Link>
-                </>
-              )}
-              
-              {!!user && user?.role === 'admin' && (
-                <>
-                  <Link 
-                    to="/admin/dashboard" 
-                    className={`text-base font-medium p-3 rounded-lg flex items-center ${
-                      location.pathname === '/admin/dashboard' ? 'bg-emerald-50 text-emerald-600' : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Shield className="h-5 w-5 mr-2" />
-                    Admin Dashboard
+                    Contact
                   </Link>
                   <Link 
-                    to="/analytics" 
-                    className={`text-base font-medium p-3 rounded-lg flex items-center ${
-                      location.pathname === '/analytics' ? 'bg-emerald-50 text-emerald-600' : 'text-gray-700 hover:bg-gray-100'
-                    }`}
+                    to="/terms" 
+                    className="block px-3 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    <BarChart3 className="h-5 w-5 mr-2" />
-                    Analytics
+                    Terms & Conditions
                   </Link>
-                </>
-              )}
-              
-              {!!user ? (
-                <button 
-                  onClick={handleLogout}
-                  className="text-base font-medium p-3 rounded-lg text-red-600 hover:bg-red-50 flex items-center"
-                >
-                  <LogOut className="h-5 w-5 mr-2" />
-                  Logout
-                </button>
-              ) : (
-                <div className="flex flex-col space-y-3 pt-3 border-t border-gray-100">
-                  <Link to="/login" className="btn btn-outline text-center py-3">
-                    Login
-                  </Link>
-                  <Link to="/register" className="btn btn-primary text-center py-3">
-                    Register
+                  <Link 
+                    to="/privacy" 
+                    className="block px-3 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Privacy Policy
                   </Link>
                 </div>
               )}
-            </nav>
+            </div>
+            
+            {user && (
+              <>
+                <div className="border-t border-gray-100 my-2 pt-2">
+                  <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Account
+                  </div>
+                  <Link 
+                    to="/profile" 
+                    className="block px-3 py-2 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-50 transition-colors flex items-center"
+                  >
+                    <User className="h-4 w-4 mr-3" />
+                    <span>My Profile</span>
+                    <VerificationBadge />
+                  </Link>
+                  {(user.profile.role === 'landlord' || user.profile.role === 'admin') && (
+                    <Link 
+                      to="/dashboard" 
+                      className="block px-3 py-2 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Dashboard
+                    </Link>
+                  )}
+                  {user.profile.role === 'admin' && (
+                    <Link 
+                      to="/admin/dashboard" 
+                      className="block px-3 py-2 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Admin
+                    </Link>
+                  )}
+                </div>
+                
+                {(user.profile.role === 'landlord' || user.profile.role === 'admin') && (
+                  <Link 
+                    to="/add-property" 
+                    className="block px-3 py-2 text-base font-medium text-gray-900 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex items-center"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-3" />
+                    List Property
+                  </Link>
+                )}
+                
+                <button 
+                  onClick={handleLogout}
+                  className="w-full text-left px-3 py-2 text-base font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center"
+                >
+                  <LogOut className="h-4 w-4 mr-3" />
+                  Logout
+                </button>
+              </>
+            )}
+            
+            {!user && (
+              <div className="border-t border-gray-100 pt-4 space-y-2">
+                <Link 
+                  to="/login" 
+                  className="block w-full text-center px-3 py-2 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-50 transition-colors border border-gray-200"
+                >
+                  Login
+                </Link>
+                <Link 
+                  to="/register" 
+                  className="block w-full text-center px-3 py-2 text-base font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}

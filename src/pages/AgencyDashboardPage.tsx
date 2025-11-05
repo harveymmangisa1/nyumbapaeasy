@@ -42,7 +42,6 @@ interface InquiryData {
     email: string;
     phone: string;
     propertyId: string;
-    [key: string]: any;
 }
 
 const AgencyDashboardPage: React.FC = () => {
@@ -52,7 +51,7 @@ const AgencyDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('properties');
   const [agencyProperties, setAgencyProperties] = useState<PropertyData[]>([]);
   const [totalViews, setTotalViews] = useState(0);
-  const [popularProperties, setPopularProperties] = useState<any[]>([]);
+  const [popularProperties, setPopularProperties] = useState<PropertyData[]>([]);
   const [inquiries, setInquiries] = useState<InquiryData[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingPropertyId, setDeletingPropertyId] = useState<string | null>(null);
@@ -123,7 +122,7 @@ const AgencyDashboardPage: React.FC = () => {
     if (user?.id) {
         fetchDashboardData();
     }
-  }, [user]);
+  }, [user, fetchDashboardData]);
 
   // Action Handlers (same as DashboardPage)
   const handleViewProperty = (propertyId: string) => {

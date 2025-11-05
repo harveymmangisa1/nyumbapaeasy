@@ -4,86 +4,77 @@ import { useProperties } from '../context/PropertyContext';
 import HeroSection from '../components/home/HeroSection';
 import FeaturedProperties from '../components/home/FeaturedProperties';
 import HowItWorks from '../components/home/HowItWorks';
-import { Home, Loader2, TrendingUp, ShieldCheck, Users } from 'lucide-react';
+import { Home, Loader2, TrendingUp, Shield, Star, ArrowRight, Plus } from 'lucide-react';
 import PropertyCard from '../components/property/PropertyCard';
 
 const HomePage: React.FC = () => {
   const { properties, isLoading } = useProperties();
-  const recentProperties = !isLoading && properties.length > 0 ? properties.slice(0, 3) : [];
+  const recentProperties = !isLoading && properties.length > 0 ? properties.slice(0, 6) : [];
 
   useEffect(() => {
     document.title = 'NyumbaPaeasy - Find Your Perfect Home in Malawi';
   }, []);
 
   return (
-    <div>
+    <div className="min-h-screen bg-white">
       <HeroSection />
       
-      {/* Stats Section */}
-      <section className="py-12 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-emerald-50 rounded-lg p-6 text-center">
-              <Home className="h-10 w-10 text-emerald-600 mx-auto mb-3" />
-              <h3 className="text-2xl font-bold text-gray-800">500+</h3>
-              <p className="text-gray-600">Properties Listed</p>
-            </div>
-            <div className="bg-blue-50 rounded-lg p-6 text-center">
-              <Users className="h-10 w-10 text-blue-600 mx-auto mb-3" />
-              <h3 className="text-2xl font-bold text-gray-800">2,000+</h3>
-              <p className="text-gray-600">Happy Clients</p>
-            </div>
-            <div className="bg-purple-50 rounded-lg p-6 text-center">
-              <TrendingUp className="h-10 w-10 text-purple-600 mx-auto mb-3" />
-              <h3 className="text-2xl font-bold text-gray-800">98%</h3>
-              <p className="text-gray-600">Success Rate</p>
-            </div>
-            <div className="bg-amber-50 rounded-lg p-6 text-center">
-              <ShieldCheck className="h-10 w-10 text-amber-600 mx-auto mb-3" />
-              <h3 className="text-2xl font-bold text-gray-800">100%</h3>
-              <p className="text-gray-600">Verified Listings</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
+    
+      
       <FeaturedProperties />
 
-      {/* Recently Added Properties Section */}
-      <section className="py-16 bg-gray-50">
+      {/* Recently Added Properties */}
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-800 mb-3">Recently Added Properties</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Check out the latest homes and apartments listed on NyumbaPaeasy.
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-emerald-50 text-emerald-700 text-sm font-medium mb-4">
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Fresh Listings
+            </div>
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">
+              Newly Added Properties
+            </h2>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+              Discover the latest homes and apartments just listed on our platform
             </p>
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center items-center py-10">
-              <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-              <span className="ml-3 text-gray-600">Loading recent properties...</span>
+            <div className="flex flex-col items-center justify-center py-16 space-y-4">
+              <div className="relative">
+                <Loader2 className="h-12 w-12 animate-spin text-emerald-600" />
+              </div>
+              <p className="text-slate-600 text-lg">Loading fresh properties...</p>
             </div>
           ) : recentProperties.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {recentProperties.map((property) => (
-                <PropertyCard key={property.id} property={property} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mb-12">
+                {recentProperties.map((property) => (
+                  <PropertyCard key={property.id} property={property} />
+                ))}
+              </div>
+              
+              {properties.length > 6 && (
+                <div className="text-center">
+                  <Link
+                    to="/properties"
+                    className="inline-flex items-center gap-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold py-4 px-8 rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 group"
+                  >
+                    <span>Explore All Properties</span>
+                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </div>
+              )}
+            </>
           ) : (
-            <div className="text-center py-10 text-gray-500">
-              No recent properties found.
-            </div>
-          )}
-
-          {!isLoading && properties.length > 3 && (
-            <div className="text-center mt-12">
-              <Link
-                to="/properties"
-                className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl"
-              >
-                View All Properties
-              </Link>
+            <div className="text-center py-16">
+              <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Home className="h-10 w-10 text-slate-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-900 mb-3">No Properties Available</h3>
+              <p className="text-slate-600 max-w-md mx-auto mb-8">
+                There are no properties listed at the moment. Check back soon for new listings.
+              </p>
             </div>
           )}
         </div>
@@ -91,27 +82,79 @@ const HomePage: React.FC = () => {
 
       <HowItWorks />
 
-      {/* Landlord CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-emerald-700 to-teal-800 text-white">
+      {/* Property Owner CTA */}
+      <section className="py-20 bg-gradient-to-br from-slate-900 to-slate-800">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <div className="mb-8 md:mb-0 md:w-2/3">
-              <h2 className="text-3xl font-bold mb-4">Are You a Property Owner?</h2>
-              <p className="text-emerald-100 text-lg mb-6 max-w-2xl">
-                List your properties on NyumbaPaeasy and connect with thousands of potential tenants and buyers.
-                Our platform makes it easy to manage your listings and communicate with interested parties.
-              </p>
-              <Link
-                to="/add-property"
-                className="inline-block bg-white text-emerald-800 font-bold py-3 px-8 rounded-lg transition-colors hover:bg-gray-100 shadow-lg"
-              >
-                List Your Property
-              </Link>
-            </div>
-            <div className="md:w-1/3 flex justify-center">
-              <div className="bg-white/20 p-6 rounded-full">
-                <Home className="h-32 w-32 text-white" />
+          <div className="max-w-6xl mx-auto">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
+              {/* Content */}
+              <div className="lg:w-7/12 text-center lg:text-left">
+                <div className="inline-flex items-center px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium mb-6">
+                  For Property Owners
+                </div>
+                <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
+                  Ready to List Your Property?
+                </h2>
+                <p className="text-lg text-slate-300 mb-8 leading-relaxed max-w-2xl">
+                  Join thousands of property owners in Malawi who trust NyumbaPaeasy to connect with qualified tenants and buyers. 
+                  Our platform makes listing and managing your properties simple and efficient.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Link
+                    to="/add-property"
+                    className="inline-flex items-center justify-center gap-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-4 px-8 rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 group"
+                  >
+                    <Plus className="h-5 w-5" />
+                    <span>List Your Property</span>
+                  </Link>
+                  <Link
+                    to="/landlord-guide"
+                    className="inline-flex items-center justify-center gap-3 bg-white/10 hover:bg-white/20 text-white font-semibold py-4 px-8 rounded-2xl transition-all duration-200 backdrop-blur-sm border border-white/20"
+                  >
+                    <span>Learn More</span>
+                    <ArrowRight className="h-5 w-5" />
+                  </Link>
+                </div>
               </div>
+              
+              {/* Visual */}
+              <div className="lg:w-5/12 flex justify-center">
+                <div className="relative">
+                  <div className="w-80 h-80 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-3xl flex items-center justify-center shadow-2xl">
+                    <div className="text-center text-white p-8">
+                      <Home className="h-16 w-16 mx-auto mb-6" />
+                      <div className="text-2xl font-bold mb-2">Join Our Community</div>
+                      <div className="text-white/80 text-sm">
+                        Trusted by property owners across Malawi
+                      </div>
+                    </div>
+                  </div>
+                  {/* Floating elements */}
+                  <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 flex items-center justify-center">
+                    <Shield className="h-8 w-8 text-emerald-400" />
+                  </div>
+                  <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 flex items-center justify-center">
+                    <TrendingUp className="h-6 w-6 text-cyan-400" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Badge */}
+      <section className="py-12 bg-slate-50 border-t border-slate-100">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">
+              Trusted By
+            </p>
+            <div className="flex flex-wrap justify-center items-center gap-12 opacity-60">
+              {/* Add your trust badge logos here */}
+              <div className="text-slate-400 text-lg font-bold">Malawi Property Association</div>
+              <div className="text-slate-400 text-lg font-bold">Real Estate Board</div>
+              <div className="text-slate-400 text-lg font-bold">Verified Landlords</div>
             </div>
           </div>
         </div>

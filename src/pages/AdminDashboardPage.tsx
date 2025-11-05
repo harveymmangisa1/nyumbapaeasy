@@ -5,16 +5,13 @@ import { supabase } from '../lib/supabase';
 import { 
   Users, 
   Home, 
-  MessageSquare, 
   FileText, 
   TrendingUp, 
   MapPin, 
-  CheckCircle, 
   XCircle, 
   Clock,
   BarChart3,
-  Eye,
-  UserCheck
+  Eye
 } from 'lucide-react';
 import { analyticsService } from '../services/analyticsService';
 
@@ -52,7 +49,6 @@ const AdminDashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [totalUsers, setTotalUsers] = useState(0);
   const [totalProperties, setTotalProperties] = useState(0);
-  const [totalInquiries, setTotalInquiries] = useState(0);
   const [pendingVerifications, setPendingVerifications] = useState(0);
   const [roleCounts, setRoleCounts] = useState({
     admin: 0,
@@ -62,7 +58,7 @@ const AdminDashboardPage: React.FC = () => {
   const [recentUsers, setRecentUsers] = useState<UserData[]>([]);
   const [recentProperties, setRecentProperties] = useState<PropertyData[]>([]);
   const [pendingDocuments, setPendingDocuments] = useState<DocumentData[]>([]);
-  const [popularProperties, setPopularProperties] = useState<any[]>([]);
+  const [popularProperties, setPopularProperties] = useState<PropertyData[]>([]);
   const [totalViews, setTotalViews] = useState(0);
 
   // Fetch dashboard data
@@ -162,7 +158,7 @@ const AdminDashboardPage: React.FC = () => {
           const total = allProperties.reduce((sum, property) => sum + (property.views || 0), 0);
           setTotalViews(total);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error fetching dashboard data:', error);
       } finally {
         setLoading(false);

@@ -1,4 +1,5 @@
 import { analyticsService } from '../services/analyticsService';
+import { supabase } from '../lib/supabase';
 
 jest.mock('../lib/supabase', () => ({
   supabase: {
@@ -9,11 +10,13 @@ jest.mock('../lib/supabase', () => ({
           update: jest.fn(() => Promise.resolve({ error: null })),
           order: jest.fn(() => ({ limit: jest.fn(() => Promise.resolve({ data: [], error: null })) }))
         }))
-      })),
-      rpc: jest.fn(() => Promise.resolve({ data: null, error: null }))
-    }))
+      }))
+    })),
+    rpc: jest.fn()
   }
 }));
+
+const mockSupabase = supabase as jest.Mocked<typeof supabase>;
 
 describe('Analytics Service', () => {
   beforeEach(() => {
@@ -22,35 +25,14 @@ describe('Analytics Service', () => {
 
   describe('trackPropertyView', () => {
     it('should increment views count for a property', async () => {
-      const mockSupabase = require('../lib/supabase').supabase;
-      
-      mockSupabase.from.mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({ data: { views: 5 }, error: null })
-          })
-        }),
-        update: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue({ error: null })
-        })
-      });
-      
+      mockSupabase.rpc.mockResolvedValue({ data: null, error: null });
       const result = await analyticsService.trackPropertyView('property-123');
       
       expect(result.success).toBe(true);
-      expect(mockSupabase.from).toHaveBeenCalledWith('properties');
     });
 
     it('should handle errors when tracking property views', async () => {
-      const mockSupabase = require('../lib/supabase').supabase;
-      
-      mockSupabase.from.mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({ error: new Error('Database error') })
-          })
-        })
-      });
+      mockSupabase.rpc.mockResolvedValue({ error: new Error('Database error') });
       
       const result = await analyticsService.trackPropertyView('property-123');
       
@@ -61,15 +43,13 @@ describe('Analytics Service', () => {
 
   describe('getPropertyViews', () => {
     it('should return the views count for a property', async () => {
-      const mockSupabase = require('../lib/supabase').supabase;
-      
       mockSupabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
             single: jest.fn().mockResolvedValue({ data: { views: 10 }, error: null })
           })
         })
-      });
+      } as any);
       
       const result = await analyticsService.getPropertyViews('property-123');
       
@@ -78,15 +58,13 @@ describe('Analytics Service', () => {
     });
 
     it('should return 0 views if property not found', async () => {
-      const mockSupabase = require('../lib/supabase').supabase;
-      
       mockSupabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
             single: jest.fn().mockResolvedValue({ data: null, error: null })
           })
         })
-      });
+      } as any);
       
       const result = await analyticsService.getPropertyViews('property-123');
       
@@ -96,13 +74,11 @@ describe('Analytics Service', () => {
 
   describe('getLandlordTotalViews', () => {
     it('should calculate total views for all landlord properties', async () => {
-      const mockSupabase = require('../lib/supabase').supabase;
-      
       mockSupabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockResolvedValue({ data: [{ views: 5 }, { views: 10 }, { views: 15 }], error: null })
         })
-      });
+      } as any);
       
       const result = await analyticsService.getLandlordTotalViews('landlord-123');
       

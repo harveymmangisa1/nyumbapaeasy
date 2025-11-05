@@ -20,6 +20,7 @@ import UsePolicyPage from './pages/UsePolicyPage';
 import AdminVerificationPage from './pages/AdminVerificationPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AgencyDashboardPage from './pages/AgencyDashboardPage';
+import WelcomePage from './pages/WelcomePage';
 
 import AnalyticsPage from './pages/AnalyticsPage';
 // Policy pages
@@ -40,6 +41,7 @@ function App() {
                 <Route path="/properties/:id" element={<PropertyDetailPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/welcome" element={<WelcomePage />} />
 
                 <Route path="/dashboard" element={<DashboardPage />} /> {/* Protected route logic inside component */}
                 <Route path="/agency/dashboard" element={<AgencyDashboardPage />} /> {/* Agency dashboard */}

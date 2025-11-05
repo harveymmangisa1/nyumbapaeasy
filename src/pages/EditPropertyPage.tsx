@@ -125,7 +125,7 @@ const EditPropertyPage: React.FC = () => {
             populateForm(propertyData);
           }
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching property:', err);
         setError('Failed to load property data. Please try again.');
       } finally {
@@ -181,7 +181,7 @@ const EditPropertyPage: React.FC = () => {
     const maxFileSize = 5 * 1024 * 1024; // 5MB
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     
-    for (let file of Array.from(e.target.files)) {
+    for (const file of Array.from(e.target.files)) {
       if (file.size > maxFileSize) {
         setImageUploadError(`File ${file.name} exceeds 5MB limit.`);
         return;
@@ -219,8 +219,7 @@ const EditPropertyPage: React.FC = () => {
       });
 
       const uploadedImageUrls = await Promise.all(uploadPromises);
-      setImages((prev) => [...prev, ...uploadedImageUrls]);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setImageUploadError(err.message || 'Failed to upload image(s). Please try again.');
       console.error('Image upload error:', err);
     }
@@ -299,7 +298,7 @@ const EditPropertyPage: React.FC = () => {
       setTimeout(() => {
         navigate(`/properties/${property.id}`);
       }, 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error updating property:', err);
       setError('Failed to update property. Please try again.');
     } finally {
@@ -425,7 +424,7 @@ const EditPropertyPage: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">Property Type</label>
               <select
                 value={type}
-                onChange={(e) => setType(e.target.value as any)}
+                onChange={(e) => setType(e.target.value as 'apartment' | 'house' | 'room' | 'commercial')}
                 className="w-full p-2 border rounded-md focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               >
                 <option value="apartment">Apartment</option>

@@ -91,12 +91,10 @@ export const PropertyProvider = ({ children }: PropertyProviderProps) => {
   const { user } = useAuth(); // Use Supabase auth user
 
   useEffect(() => {
-    console.log('PropertyProvider: Initializing...');
     
     const fetchProperties = async () => {
       setIsLoading(true);
       try {
-        console.log('PropertyProvider: Fetching properties from Supabase...');
         const { data: fetchedProperties, error } = await supabase
           .from('properties')
           .select('*')
@@ -106,7 +104,6 @@ export const PropertyProvider = ({ children }: PropertyProviderProps) => {
           console.error("Error fetching properties from Supabase:", error);
           setProperties([]);
         } else {
-          console.log("PropertyProvider: Fetched properties:", fetchedProperties);
           setProperties(fetchedProperties as Property[] || []);
         }
       } catch (error) {
@@ -114,7 +111,6 @@ export const PropertyProvider = ({ children }: PropertyProviderProps) => {
         setProperties([]);
       } finally {
         setIsLoading(false);
-        console.log('PropertyProvider: Finished loading properties');
       }
     };
 
@@ -218,7 +214,6 @@ export const PropertyProvider = ({ children }: PropertyProviderProps) => {
     }
   };
 
-  console.log('PropertyProvider: Rendering with properties count:', properties.length, 'and loading state:', isLoading);
 
   return (
     <PropertyContext.Provider value={{

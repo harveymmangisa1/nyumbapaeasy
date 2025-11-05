@@ -19,7 +19,13 @@ interface ViewData {
 
 const AnalyticsPage: React.FC = () => {
   const { user } = useUser();
-  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [analyticsData, setAnalyticsData] = useState<{
+    total_views: number;
+    unique_visitors: number;
+    total_properties: number;
+    views_by_date: { date: string; views: number }[];
+    popular_properties: PropertyData[];
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30'); // days
   const [propertyFilter, setPropertyFilter] = useState('all');
@@ -78,7 +84,7 @@ const AnalyticsPage: React.FC = () => {
   }
   
   // Format data for charts
-  const viewsByDate: ViewData[] = analyticsData?.views_by_date?.map((item: any) => ({
+  const viewsByDate: ViewData[] = analyticsData?.views_by_date?.map((item: { date: string; views: number }) => ({
     date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     views: item.views
   })) || [];

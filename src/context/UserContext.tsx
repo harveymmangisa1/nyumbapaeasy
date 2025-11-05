@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext } from 'react';
 import { useAuth } from './AuthContext';
 
 // Re-export the types from AuthContext for consistency

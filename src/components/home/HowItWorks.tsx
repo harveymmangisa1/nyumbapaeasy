@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Home, UserCheck, ArrowRight, Users, Building, MessageCircle } from 'lucide-react';
+import { Search, Home, UserCheck, ArrowRight, MessageCircle } from 'lucide-react';
 
 const HowItWorks: React.FC = () => {
   const steps = [

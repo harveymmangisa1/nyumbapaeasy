@@ -86,7 +86,7 @@ const VerificationDocumentUpload: React.FC<VerificationDocumentUploadProps> = ({
       if (onUploadComplete) {
         onUploadComplete();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Upload error:', error);
       setUploadError(error.message || 'Failed to upload document. Please try again.');
     } finally {
@@ -168,7 +168,7 @@ const VerificationDocumentUpload: React.FC<VerificationDocumentUploadProps> = ({
           </label>
           <select
             value={documentType}
-            onChange={(e) => setDocumentType(e.target.value as any)}
+            onChange={(e) => setDocumentType(e.target.value as 'business_license' | 'property_deed' | 'national_id' | 'other')}
             className="input w-full"
             disabled={isUploading}
           >
