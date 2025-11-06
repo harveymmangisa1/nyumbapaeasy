@@ -172,8 +172,17 @@ const Header: React.FC = () => {
                     <VerificationBadge />
                   </div>
                   <Link to="/profile" className="mobile-nav-link"><User className="h-4 w-4 mr-3" />My Profile</Link>
-                  {(user.profile.role === 'landlord' || user.profile.role === 'admin') && (
+                  {(user.profile.role === 'landlord' || user.profile.role === 'admin' || user.profile.role === 'real_estate_agency') && (
                     <Link to="/add-property" className="mobile-nav-link bg-gray-50"><PlusCircle className="h-4 w-4 mr-3" />List Property</Link>
+                  )}
+                  {(user.profile.role === 'landlord' || user.profile.role === 'admin') && (
+                    <Link to="/dashboard" className="mobile-nav-link">Dashboard</Link>
+                  )}
+                  {user.profile.role === 'real_estate_agency' && (
+                    <Link to="/agency/dashboard" className="mobile-nav-link">Agency Dashboard</Link>
+                  )}
+                  {user.profile.role === 'admin' && (
+                    <Link to="/admin/dashboard" className="mobile-nav-link">Admin Panel</Link>
                   )}
                   <button onClick={handleLogout} className="mobile-nav-link text-red-600"><LogOut className="h-4 w-4 mr-3" />Logout</button>
                 </>
