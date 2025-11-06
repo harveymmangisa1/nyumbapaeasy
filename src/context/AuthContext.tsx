@@ -109,28 +109,49 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const getInitialSession = async () => {
       setLoading(true);
-      const { data: { session: initialSession } } = await supabase.auth.getSession();
-      setSession(initialSession);
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        setSession(initialSession);
 
-      if (initialSession?.user) {
-        const appUser = await fetchUser(initialSession.user);
-        setUser(appUser);
+        if (initialSession?.user) {
+          try {
+            const appUser = await fetchUser(initialSession.user);
+            setUser(appUser);
+          } catch (e) {
+            console.error('fetchUser (initial) failed:', e);
+            setUser(null);
+          }
+        }
+      } catch (e) {
+        console.error('getSession failed:', e);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     getInitialSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       setLoading(true);
-      setSession(newSession);
-      if (newSession?.user) {
-        const appUser = await fetchUser(newSession.user);
-        setUser(appUser);
-      } else {
+      try {
+        setSession(newSession);
+        if (newSession?.user) {
+          try {
+            const appUser = await fetchUser(newSession.user);
+            setUser(appUser);
+          } catch (e) {
+            console.error('fetchUser (onAuthStateChange) failed:', e);
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
+      } catch (e) {
+        console.error('onAuthStateChange handler error:', e);
         setUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => {

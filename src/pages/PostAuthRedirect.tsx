@@ -18,8 +18,10 @@ const PostAuthRedirect = () => {
       return;
     }
 
-    // Route by role
-    const role = user.profile?.role;
+    // Route by role - fallback to metadata role if profile missing
+    const metadataRole = (user?.user_metadata?.role || user?.app_metadata?.role) as string | undefined;
+    const role = user.profile?.role || metadataRole;
+
     if (role === 'admin') navigate('/admin/dashboard', { replace: true });
     else if (role === 'real_estate_agency') navigate('/agency/dashboard', { replace: true });
     else if (role === 'landlord') navigate('/dashboard', { replace: true });
