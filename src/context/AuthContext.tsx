@@ -59,6 +59,8 @@ const createProfile = async (userId: string, email?: string, role: UserProfile['
           id: userId,
           name,
           role,
+          is_verified: false,
+          has_pending_verification: false,
         },
       ])
       .select()
