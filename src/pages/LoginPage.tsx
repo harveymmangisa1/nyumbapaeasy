@@ -10,7 +10,7 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, user } = useAuth();
+  const { signIn, user, session, loading } = useAuth();
   const navigate = useNavigate();
   
   // Update document title
@@ -81,6 +81,23 @@ const LoginPage: React.FC = () => {
               </div>
             )}
             
+            {/* Temporary Auth Debug Panel */}
+            <div className="mb-4 p-3 bg-gray-50 text-gray-800 rounded-md text-xs">
+              <div className="font-semibold mb-1">Auth Debug (temporary)</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <div><span className="font-medium">Auth loading:</span> {String(loading)}</div>
+                  <div><span className="font-medium">Session user:</span> {session?.user?.id || 'none'}</div>
+                  <div><span className="font-medium">Session email:</span> {session?.user?.email || 'none'}</div>
+                </div>
+                <div>
+                  <div><span className="font-medium">App user:</span> {user?.id || 'none'}</div>
+                  <div><span className="font-medium">Profile role:</span> {user?.profile?.role || 'none'}</div>
+                  <div><span className="font-medium">Verified:</span> {user?.profile?.is_verified === true ? 'true' : String(user?.profile?.is_verified)}</div>
+                </div>
+              </div>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
