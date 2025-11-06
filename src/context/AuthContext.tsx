@@ -25,7 +25,8 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  sendPasswordReset: (email: string) => Promise<void>;
+  sendOtp: (email: string) => Promise<void>;
+  verifyOtp: (email: string, token: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -147,10 +148,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
   };
 
-  const sendPasswordReset = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/password-reset-callback`,
-    });
+  const sendOtp = async (email: string) => {
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    if (error) {
+      throw error;
+    }
+  };
+
+  const verifyOtp = async (email: string, token: string) => {
+    const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
     if (error) {
       throw error;
     }
@@ -160,9 +166,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     user,
     session,
     loading,
-    signIn, // Use signIn
+    signIn,
     logout,
-    sendPasswordReset,
+    sendOtp,
+    verifyOtp,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

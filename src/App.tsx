@@ -31,7 +31,6 @@ import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import CookiePage from './pages/CookiePage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
-import PasswordResetCallbackPage from './pages/PasswordResetCallbackPage';
 
 function App() {
   return (
@@ -67,7 +66,6 @@ function App() {
                     <Route path="/cookies" element={<CookiePage />} />
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
-                    <Route path="/password-reset-callback" element={<PasswordResetCallbackPage />} />
                   </Routes>
                 </main>
                 <Footer />
