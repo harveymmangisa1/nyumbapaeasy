@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -39,9 +40,26 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
+      // Safety timeout to avoid endless spinner
+      const timeoutId = window.setTimeout(() => {
+        setIsLoading(false);
+        setError('Login is taking longer than expected. Please try again.');
+      }, 12000);
+
+      // Attempt sign in
       await signIn(email, password);
+
+      // Sanity check: ensure session exists
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        // Optionally, we could navigate immediately; otherwise role-based redirect will happen via useEffect
+        // navigate('/post-auth');
+      }
+
+      window.clearTimeout(timeoutId);
       // Redirect will be handled by the useEffect above based on user role
     } catch (err: unknown) {
+      console.error('Sign-in failed:', err);
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setIsLoading(false);

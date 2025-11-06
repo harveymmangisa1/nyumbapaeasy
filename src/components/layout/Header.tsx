@@ -104,7 +104,7 @@ const Header: React.FC = () => {
           <div className="hidden lg:flex items-center space-x-4">
             {user ? (
               <>
-                {(user.profile.role === 'landlord' || user.profile.role === 'admin') && (
+                {(user.profile.role === 'landlord' || user.profile.role === 'admin' || user.profile.role === 'real_estate_agency') && (
                   <Link to="/add-property" className="btn btn-primary text-sm">
                     <PlusCircle className="h-4 w-4 mr-2" />
                     List Property
@@ -127,6 +127,9 @@ const Header: React.FC = () => {
                     <Link to="/profile" className="dropdown-link">My Profile</Link>
                     {(user.profile.role === 'landlord' || user.profile.role === 'admin') && (
                       <Link to="/dashboard" className="dropdown-link">Dashboard</Link>
+                    )}
+                    {user.profile.role === 'real_estate_agency' && (
+                      <Link to="/agency/dashboard" className="dropdown-link">Agency Dashboard</Link>
                     )}
                     {user.profile.role === 'admin' && (
                       <Link to="/admin/dashboard" className="dropdown-link">Admin Panel</Link>
