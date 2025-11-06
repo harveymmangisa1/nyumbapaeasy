@@ -40,7 +40,7 @@ const getProfile = async (userId: string): Promise<UserProfile | null> => {
       .eq('id', userId)
       .single();
 
-    if (status !== 406) { // 406 is returned by PostgREST when no rows are found with .single()
+    if (status === 406) { // 406 is returned by PostgREST when no rows are found with .single()
       return null;
     }
     return data as UserProfile;
@@ -49,7 +49,7 @@ const getProfile = async (userId: string): Promise<UserProfile | null> => {
     return null;
   }
 };
-const createProfile = async (userId: string, email?: string): Promise<UserProfile | null> => {
+const createProfile = async (userId: string, email?: string, role: UserProfile['role'] = 'user'): Promise<UserProfile | null> => {
   try {
     const name = email?.split('@')[0]; // Basic name from email
     const { data, error } = await supabase
@@ -58,7 +58,7 @@ const createProfile = async (userId: string, email?: string): Promise<UserProfil
         {
           id: userId,
           name,
-          role: 'renter', // Default role
+          role,
         },
       ])
       .select()

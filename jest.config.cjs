@@ -10,7 +10,8 @@ module.exports = {
     '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: './tsconfig.test.json' }]
   },
   moduleNameMapper: {
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '^../lib/supabase$': '<rootDir>/src/__mocks__/supabase.ts'
   },
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts']
 };
