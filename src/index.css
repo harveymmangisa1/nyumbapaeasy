@@ -13,6 +13,7 @@
 
   body {
     @apply bg-background text-text-primary;
+    padding-top: env(safe-area-inset-top);
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -20,15 +21,15 @@
   }
 
   h1 {
-    @apply text-4xl;
+    @apply text-3xl sm:text-4xl;
   }
 
   h2 {
-    @apply text-3xl;
+    @apply text-2xl sm:text-3xl;
   }
 
   h3 {
-    @apply text-2xl;
+    @apply text-xl sm:text-2xl;
   }
 
   p {
@@ -62,7 +63,7 @@
   }
 
   .container {
-    @apply px-4 mx-auto max-w-7xl;
+    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
   }
 
   .nav-link {
@@ -76,5 +77,10 @@
   }
   .mobile-nav-link {
     @apply block px-3 py-2 rounded-md text-base font-medium text-text-primary hover:bg-gray-100 transition-colors flex items-center;
+  }
+
+  /* Ensure main content clears the fixed header height on small screens */
+  .with-fixed-header {
+    padding-top: 4rem; /* header is h-16 */
   }
 }

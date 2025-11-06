@@ -159,7 +159,7 @@ const ProfilePage: React.FC = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <p className="text-gray-900 capitalize">{user.role}</p>
+                <p className="text-gray-900 capitalize">{user.profile?.role}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Member Since</label>
@@ -178,7 +178,7 @@ const ProfilePage: React.FC = () => {
           </div>
           
           {/* Verification Document Upload */}
-          {(user.role === 'landlord' || user.role === 'admin') && (
+          {(user.profile?.role === 'landlord' || user.profile?.role === 'admin') && (
             <div className="mb-6">
               <VerificationDocumentUpload />
             </div>

@@ -64,7 +64,7 @@ const AdminDashboardPage: React.FC = () => {
   // Fetch dashboard data
   useEffect(() => {
     const fetchData = async () => {
-      if (!user || user.role !== 'admin') return;
+      if (!user || user.profile?.role !== 'admin') return;
       
       setLoading(true);
       try {
@@ -179,7 +179,7 @@ const AdminDashboardPage: React.FC = () => {
     );
   }
 
-  if (!user || user.role !== 'admin') {
+  if (!user || user.profile?.role !== 'admin') {
     return (
       <div className="min-h-screen bg-gray-100 py-12 flex items-center justify-center">
         <div className="text-center">
@@ -309,7 +309,7 @@ const AdminDashboardPage: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize bg-gray-100 text-gray-800">
-                          {user.role}
+                          {user.profile?.role}
                         </span>
                         <p className="text-xs text-gray-500 mt-1">
                           {new Date(user.created_at).toLocaleDateString()}

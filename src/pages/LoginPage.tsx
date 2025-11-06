@@ -20,12 +20,12 @@ const LoginPage: React.FC = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (user) {
-      // Redirect to appropriate dashboard based on user role
-      if (user.role === 'admin') {
+      const role = user.profile?.role;
+      if (role === 'admin') {
         navigate('/admin/dashboard');
-      } else if (user.role === 'real_estate_agency') {
+      } else if (role === 'real_estate_agency') {
         navigate('/agency/dashboard');
-      } else if (user.role === 'landlord') {
+      } else if (role === 'landlord') {
         navigate('/dashboard');
       } else {
         navigate('/');

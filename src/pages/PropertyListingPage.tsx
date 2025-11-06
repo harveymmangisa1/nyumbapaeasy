@@ -3,13 +3,18 @@ import { useSearchParams } from 'react-router-dom';
 import PropertyCard from '../components/property/PropertyCard';
 import PropertyFilter from '../components/property/PropertyFilter';
 import { useProperties, SearchFilters, Property } from '../context/PropertyContext';
-import { GridIcon, List, SlidersHorizontal, MapPin, Home } from 'lucide-react';
+import { GridIcon, List, SlidersHorizontal, MapPin, Home, Map as MapIcon, ArrowUpDown } from 'lucide-react';
+
+import Chip from '../components/ui/Chip';
 
 const PropertyListingPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { searchProperties } = useProperties();
+  const [loading, setLoading] = useState(true);
   const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
   const [isGridView, setIsGridView] = useState(true);
+  const [sortBy, setSortBy] = useState<'relevance' | 'price_asc' | 'price_desc' | 'newest'>('relevance');
+  const [quick, setQuick] = useState<{ verified?: boolean; newOnly?: boolean; under500k?: boolean }>({});
   
   // Get initial filters from URL params
   const initialFilters: SearchFilters = useMemo(() => ({
@@ -41,9 +46,34 @@ const PropertyListingPage: React.FC = () => {
     setSearchParams(newSearchParams);
     
     // Search properties
-    const results = searchProperties(filters);
+    setLoading(true);
+    let results = searchProperties(filters);
+
+    // Quick filters (client-side)
+    if (quick.verified) results = results.filter((p) => (p as any).is_verified);
+    if (quick.newOnly) {
+      results = results.filter((p) => {
+        const created = (p as any).created_at ? new Date((p as any).created_at) : null;
+        if (!created) return false;
+        return Date.now() - created.getTime() < 1000 * 60 * 60 * 24 * 7;
+      });
+    }
+    if (quick.under500k) results = results.filter((p) => p.price <= 500000);
+
+    // Sorting
+    results = [...results].sort((a, b) => {
+      if (sortBy === 'price_asc') return a.price - b.price;
+      if (sortBy === 'price_desc') return b.price - a.price;
+      if (sortBy === 'newest') {
+        const ad = (a as any).created_at ? new Date((a as any).created_at).getTime() : 0;
+        const bd = (b as any).created_at ? new Date((b as any).created_at).getTime() : 0;
+        return bd - ad;
+      }
+      return 0; // relevance (no-op for now)
+    });
     setFilteredProperties(results);
-  }, [searchProperties, setSearchParams]);
+    setLoading(false);
+  }, [searchProperties, setSearchParams, quick, sortBy]);
   
   // Initialize search based on URL params
   useEffect(() => {
@@ -52,7 +82,7 @@ const PropertyListingPage: React.FC = () => {
   
   return (
     <div className="bg-gradient-to-b from-gray-50 to-white min-h-screen py-8">
-      <div className="container mx-auto px-4">
+      <div className="container">
         {/* Page Header */}
         <div className="mb-8">
           <div className="flex items-center mb-2">
@@ -69,8 +99,8 @@ const PropertyListingPage: React.FC = () => {
         
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Filters Sidebar */}
-          <div className="lg:w-1/4">
-            <div className="bg-white rounded-xl shadow-md p-6 sticky top-6">
+          <div className="w-full lg:w-1/4 order-2 lg:order-1">
+            <div className="bg-white rounded-xl shadow-md p-6 lg:sticky lg:top-24">
               <div className="flex items-center mb-4">
                 <SlidersHorizontal className="h-5 w-5 text-emerald-600 mr-2" />
                 <h2 className="text-lg font-semibold text-gray-800">Filters</h2>
@@ -80,7 +110,7 @@ const PropertyListingPage: React.FC = () => {
           </div>
           
           {/* Main Content */}
-          <div className="lg:w-3/4">
+          <div className="w-full lg:w-3/4 order-1 lg:order-2">
             {/* Results Header */}
             <div className="bg-white rounded-xl shadow-md p-6 mb-6">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -94,6 +124,14 @@ const PropertyListingPage: React.FC = () => {
                 </div>
                 
                 <div className="flex items-center space-x-4">
+                  {/* Clear All */}
+                  <button
+                    className="text-sm text-slate-600 hover:text-slate-900 underline"
+                    onClick={() => { setQuick({}); handleFilter({}); }}
+                  >
+                    Clear all
+                  </button>
+
                   {/* View Toggle */}
                   <div className="flex items-center bg-gray-100 rounded-lg p-1">
                     <button
@@ -132,7 +170,22 @@ const PropertyListingPage: React.FC = () => {
             </div>
             
             {/* Property Grid/List */}
-            {filteredProperties.length > 0 ? (
+            {loading ? (
+              <div className={`${isGridView ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'space-y-6'}`}>
+                {Array.from({ length: isGridView ? 6 : 3 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-2xl border border-slate-100 p-4">
+                    <div className="h-48 bg-slate-200 rounded-xl mb-4 animate-pulse" />
+                    <div className="h-4 bg-slate-200 rounded w-3/4 mb-2 animate-pulse" />
+                    <div className="h-3 bg-slate-200 rounded w-2/3 mb-4 animate-pulse" />
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="h-3 bg-slate-200 rounded animate-pulse" />
+                      <div className="h-3 bg-slate-200 rounded animate-pulse" />
+                      <div className="h-3 bg-slate-200 rounded animate-pulse" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredProperties.length > 0 ? (
               <div className={`${isGridView ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'space-y-6'}`}>
                 {filteredProperties.map(property => (
                   <PropertyCard key={property.id} property={property} />

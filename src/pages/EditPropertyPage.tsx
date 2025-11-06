@@ -74,7 +74,7 @@ const EditPropertyPage: React.FC = () => {
       return;
     }
     
-    if (user && user.role !== 'landlord' && user.role !== 'admin') {
+    if (user && user.profile?.role !== 'landlord' && user.profile?.role !== 'admin') {
       navigate('/');
       return;
     }
@@ -116,7 +116,7 @@ const EditPropertyPage: React.FC = () => {
             const propertyData = data as Property;
             
             // Check if user owns this property or is admin
-            if (user && propertyData.landlord_id !== user.id && user.role !== 'admin') {
+            if (user && propertyData.landlord_id !== user.id && user.profile?.role !== 'admin') {
               setError('You do not have permission to edit this property.');
               return;
             }
@@ -336,7 +336,7 @@ const EditPropertyPage: React.FC = () => {
     );
   }
 
-  if (!isAuthenticated || (user && property.landlord_id !== user.id && user.role !== 'admin')) {
+  if (!isAuthenticated || (user && property.landlord_id !== user.id && user.profile?.role !== 'admin')) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <ShieldAlert className="h-12 w-12 text-red-500 mx-auto mb-4" />

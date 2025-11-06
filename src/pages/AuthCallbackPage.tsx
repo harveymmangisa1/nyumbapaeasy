@@ -24,7 +24,7 @@ const AuthCallbackPage = () => {
         setMessage('Email confirmed successfully! Redirecting...');
         
         setTimeout(() => {
-          navigate('/welcome');
+          navigate('/post-auth');
         }, 2000);
       } catch (err) {
         setStatus('error');

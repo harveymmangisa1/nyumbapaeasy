@@ -49,6 +49,7 @@ export interface Property {
   amenities: string[];
   cover_image: string; // Primary image for display
   images: string[]; // Additional images
+  is_verified?: boolean; // Optional verification flag
   views?: number; // Add views field
 }
 

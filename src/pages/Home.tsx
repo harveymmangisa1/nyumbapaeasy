@@ -27,16 +27,7 @@ const HomePage: React.FC = () => {
       // The AuthProvider will handle the session from the URL hash.
       // Once the user object is available, we can redirect.
       if (user) {
-        const role = user.profile?.role;
-        if (role === 'admin') {
-          navigate('/admin/dashboard');
-        } else if (role === 'real_estate_agency') {
-          navigate('/agency/dashboard');
-        } else if (role === 'landlord') {
-          navigate('/dashboard');
-        } else {
-          navigate('/welcome');
-        }
+        navigate('/post-auth');
       }
     }
   }, [location.hash, user, navigate]);
@@ -57,7 +48,46 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <HeroSection />
-      
+
+      {/* Hero Search */}
+      <section className="py-8">
+        <div className="container">
+          <div className="max-w-3xl mx-auto">
+            <div className="mb-4 text-center">
+              <h2 className="text-xl font-semibold text-primary mb-2">Find your next home</h2>
+              <p className="text-text-secondary">Search by location, district, or property type</p>
+            </div>
+            {/* Reuseable search bar */}
+            {/* Simple client-side nav to listings with query */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const form = e.target as HTMLFormElement;
+                const input = form.querySelector('input[name="q"]') as HTMLInputElement | null;
+                const q = input?.value?.trim();
+                if (q) {
+                  navigate(`/properties?location=${encodeURIComponent(q)}`);
+                } else {
+                  navigate('/properties');
+                }
+              }}
+              className="flex items-center bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+            >
+              <input name="q" placeholder="Where do you want to live?" className="flex-1 px-4 py-3 outline-none" />
+              <button type="submit" className="bg-slate-900 text-white px-5 py-3 hover:bg-slate-800 transition-colors">Search</button>
+            </form>
+
+            {/* Featured areas */}
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <button onClick={() => navigate('/properties?location=Lilongwe')} className="px-3 py-1.5 rounded-full border border-slate-200 text-sm hover:bg-slate-50">Lilongwe</button>
+              <button onClick={() => navigate('/properties?location=Blantyre')} className="px-3 py-1.5 rounded-full border border-slate-200 text-sm hover:bg-slate-50">Blantyre</button>
+              <button onClick={() => navigate('/properties?location=Mzuzu')} className="px-3 py-1.5 rounded-full border border-slate-200 text-sm hover:bg-slate-50">Mzuzu</button>
+              <button onClick={() => navigate('/properties?location=Zomba')} className="px-3 py-1.5 rounded-full border border-slate-200 text-sm hover:bg-slate-50">Zomba</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <FeaturedProperties />
 
       {/* Recently Added Properties */}
@@ -126,7 +156,7 @@ const HomePage: React.FC = () => {
                 <div className="inline-flex items-center px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-medium mb-6">
                   For Property Owners
                 </div>
-                <h2 className="text-4xl lg:text-5xl font-bold text-surface mb-6 leading-tight">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-surface mb-6 leading-tight">
                   Ready to List Your Property?
                 </h2>
                 <p className="text-lg text-gray-300 mb-8 leading-relaxed max-w-2xl">
@@ -148,7 +178,7 @@ const HomePage: React.FC = () => {
               {/* Visual */}
               <div className="lg:w-5/12 flex justify-center">
                 <div className="relative">
-                  <div className="w-80 h-80 bg-gradient-to-br from-accent to-teal-400 rounded-3xl flex items-center justify-center shadow-2xl">
+                  <div className="w-64 h-64 sm:w-72 sm:h-72 lg:w-80 lg:h-80 bg-gradient-to-br from-accent to-teal-400 rounded-3xl flex items-center justify-center shadow-2xl">
                     <div className="text-center text-white p-8">
                       <Home className="h-16 w-16 mx-auto mb-6" />
                       <div className="text-2xl font-bold mb-2">Join Our Community</div>

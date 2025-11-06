@@ -80,13 +80,15 @@ const Header: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => setIsResourcesOpen(!isResourcesOpen)}
+                aria-expanded={isResourcesOpen}
+                aria-controls="resources-menu"
                 className={`nav-link ${isResourcesOpen ? 'active' : ''}`}>
                 Resources
                 <ChevronDown className={`ml-1 h-4 w-4 transition-transform duration-200 ${isResourcesOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isResourcesOpen && (
-                <div className="absolute top-full left-0 mt-2 w-56 bg-surface rounded-md shadow-lg border border-border py-1 z-50">
+                <div id="resources-menu" className="absolute top-full left-0 mt-2 w-56 bg-surface rounded-md shadow-lg border border-border py-1 z-50">
                   <Link to="/about" className="dropdown-link">About Us</Link>
                   <Link to="/faq" className="dropdown-link">FAQ</Link>
                   <Link to="/contact" className="dropdown-link">Contact</Link>
@@ -145,7 +147,7 @@ const Header: React.FC = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <button className="lg:hidden p-2 rounded-md text-text-secondary hover:bg-gray-100" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+          <button className="lg:hidden p-2 rounded-md text-text-secondary hover:bg-gray-100" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-expanded={isMenuOpen} aria-controls="mobile-menu">
             {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
@@ -153,7 +155,7 @@ const Header: React.FC = () => {
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="lg:hidden bg-surface border-t border-border animate-in slide-in-from-top-full duration-300">
+        <div id="mobile-menu" className="lg:hidden bg-surface border-t border-border animate-in slide-in-from-top-full duration-300">
           <div className="px-2 py-4 space-y-2">
             <Link to="/" className="mobile-nav-link">Home</Link>
             <Link to="/properties" className="mobile-nav-link"><Building className="h-4 w-4 mr-3" />Properties</Link>

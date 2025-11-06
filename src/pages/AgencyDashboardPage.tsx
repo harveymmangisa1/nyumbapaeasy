@@ -63,7 +63,7 @@ const AgencyDashboardPage: React.FC = () => {
   useEffect(() => {
     if (!user) {
       navigate('/login');
-    } else if (user?.role !== 'real_estate_agency') {
+    } else if (user?.profile?.role !== 'real_estate_agency') {
       navigate('/');
     }
   }, [user, navigate]);

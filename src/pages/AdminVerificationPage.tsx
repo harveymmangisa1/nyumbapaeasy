@@ -44,7 +44,7 @@ const AdminVerificationPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (user && user.role !== 'admin') {
+    if (user && user.profile?.role !== 'admin') {
       navigate('/');
     }
   }, [user, navigate]);
@@ -52,7 +52,7 @@ const AdminVerificationPage: React.FC = () => {
   // Fetch verification documents
   useEffect(() => {
     const fetchDocuments = async () => {
-      if (!user || user.role !== 'admin') return;
+      if (!user || user.profile?.role !== 'admin') return;
       
       setLoading(true);
       try {
@@ -176,7 +176,7 @@ const AdminVerificationPage: React.FC = () => {
     }
   };
 
-  if (!user || user.role !== 'admin') {
+  if (!user || user.profile?.role !== 'admin') {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <div className="text-center">

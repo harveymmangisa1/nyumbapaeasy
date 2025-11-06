@@ -37,9 +37,9 @@ const AnalyticsPage: React.FC = () => {
       setLoading(true);
       try {
         let data;
-        if (user.role === 'admin') {
+        if (user.profile?.role === 'admin') {
           data = await analyticsService.getAdminAnalyticsSummary();
-        } else if (user.role === 'landlord') {
+        } else if (user.profile?.role === 'landlord') {
           data = await analyticsService.getLandlordAnalyticsSummary(user.id);
         }
         
@@ -67,7 +67,7 @@ const AnalyticsPage: React.FC = () => {
     );
   }
   
-  if (!user || (user.role !== 'admin' && user.role !== 'landlord')) {
+  if (!user || (user.profile?.role !== 'admin' && user.profile?.role !== 'landlord')) {
     return (
       <div className="min-h-screen bg-gray-100 py-12 flex items-center justify-center">
         <div className="text-center">
@@ -99,7 +99,7 @@ const AnalyticsPage: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Analytics Dashboard</h1>
             <p className="text-gray-600 mt-2">
-              {user.role === 'admin' 
+              {user.profile?.role === 'admin' 
                 ? 'Platform-wide analytics and insights' 
                 : 'Analytics for your properties'}
             </p>
@@ -120,7 +120,7 @@ const AnalyticsPage: React.FC = () => {
               </select>
             </div>
             
-            {user.role === 'landlord' && (
+            {user.profile?.role === 'landlord' && (
               <div className="flex items-center">
                 <Filter className="h-5 w-5 text-gray-500 mr-2" />
                 <select 
@@ -174,7 +174,7 @@ const AnalyticsPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500">Properties</p>
                 <p className="text-2xl font-bold text-gray-800">
-                  {user.role === 'admin' 
+                  {user.profile?.role === 'admin' 
                     ? analyticsData?.total_properties || 0 
                     : analyticsData?.total_properties || popularProperties.length}
                 </p>

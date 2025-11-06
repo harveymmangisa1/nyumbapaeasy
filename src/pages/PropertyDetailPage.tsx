@@ -70,7 +70,7 @@ const PropertyDetailPage: React.FC = () => {
   };
   
   return (
-    <div className="bg-gray-100 py-8">
+    <div className="bg-gray-100 py-8 pb-20 md:pb-8">
       <div className="container mx-auto px-4">
         {/* Back Button */}
         <Link 
@@ -122,6 +122,7 @@ const PropertyDetailPage: React.FC = () => {
             <img 
               src={property.images[activeImage]} 
               alt={property.title} 
+              loading="lazy"
               className="h-full w-full object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -169,6 +170,7 @@ const PropertyDetailPage: React.FC = () => {
                   <img
                     src={image}
                     alt={`Property view ${index + 1}`}
+                    loading="lazy"
                     className="h-full w-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
@@ -451,6 +453,7 @@ const PropertyDetailPage: React.FC = () => {
                     <img 
                       src={similarProperty.cover_image || similarProperty.images[0]} 
                       alt={similarProperty.title} 
+                      loading="lazy"
                       className="h-full w-full object-cover"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -516,6 +519,21 @@ const PropertyDetailPage: React.FC = () => {
               ))}
             </div>
           </div>
+        )}
+      </div>
+
+      {/* Sticky CTA on mobile */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 flex items-center justify-between">
+        <div>
+          <div className="text-lg font-bold text-emerald-600">MK {property.price.toLocaleString()}</div>
+          {property.listing_type === 'rent' && (
+            <div className="text-xs text-gray-500">/ {property.payment_cycle === 'monthly' ? 'month' : 'period'}</div>
+          )}
+        </div>
+        {isAuthenticated ? (
+          <button onClick={() => setShowContact(true)} className="btn btn-primary">Contact</button>
+        ) : (
+          <Link to="/login" className="btn btn-primary">Login</Link>
         )}
       </div>
     </div>
