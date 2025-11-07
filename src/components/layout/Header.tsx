@@ -112,12 +112,28 @@ const Header: React.FC = () => {
                 )}
                 <div className="relative group">
                   <div className="flex items-center space-x-2 cursor-pointer p-2 rounded-md hover:bg-gray-100">
-                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                      <User className="h-5 w-5 text-text-secondary" />
+                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                      {user.profile.avatar_url ? (
+                        <img 
+                          src={user.profile.avatar_url} 
+                          alt="Profile" 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = '<svg class="h-5 w-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>';
+                            }
+                          }}
+                        />
+                      ) : (
+                        <User className="h-5 w-5 text-text-secondary" />
+                      )}
                     </div>
                     <div className="flex flex-col items-start">
-                      <span className="text-sm font-medium text-text-primary">{user.name}</span>
-                      <span className="text-xs text-text-secondary capitalize">{user.profile.role}</span>
+                      <span className="text-sm font-medium text-text-primary">{user.name || user.email}</span>
+                      <span className="text-xs text-text-secondary capitalize">{user.profile.role?.replace('_', ' ')}</span>
                     </div>
                     <VerificationBadge />
                     <ChevronDown className="h-4 w-4 text-text-secondary" />
@@ -167,8 +183,8 @@ const Header: React.FC = () => {
               {user ? (
                 <>
                   <div className="px-3 mb-2">
-                    <p className="font-semibold text-text-primary">{user.name}</p>
-                    <p className="text-sm text-text-secondary capitalize">{user.profile.role}</p>
+                    <p className="font-semibold text-text-primary">{user.name || user.email}</p>
+                    <p className="text-sm text-text-secondary capitalize">{user.profile.role?.replace('_', ' ')}</p>
                     <VerificationBadge />
                   </div>
                   <Link to="/profile" className="mobile-nav-link"><User className="h-4 w-4 mr-3" />My Profile</Link>

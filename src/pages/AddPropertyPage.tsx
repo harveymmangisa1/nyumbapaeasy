@@ -63,7 +63,10 @@ const AddPropertyPage = () => {
   
   const [errors, setErrors] = useState({});
 
-  if (!user?.profile.is_verified) {
+  const canAddProperty = user?.profile.is_verified || user?.profile.role === 'real_estate_agency';
+  const isUnverifiedAgency = user?.profile.role === 'real_estate_agency' && !user?.profile.is_verified;
+
+  if (!canAddProperty) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-4">
         <div className="container mx-auto max-w-4xl">
@@ -72,7 +75,7 @@ const AddPropertyPage = () => {
               <AlertCircle className="mx-auto h-12 w-12 text-yellow-500" />
               <h2 className="mt-4 text-2xl font-semibold text-slate-900">Verification Required</h2>
               <p className="mt-2 text-slate-600">
-                You need to be a verified landlord or agent to add a property.
+                You need to be a verified landlord to add a property.
                 Please complete your profile verification.
               </p>
             </div>
@@ -235,12 +238,20 @@ const AddPropertyPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-4">
       <div className="container mx-auto max-w-4xl">
-        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-8 py-6">
-            <h1 className="text-2xl md:text-3xl font-semibold text-white mb-2">List Your Property</h1>
-            <p className="text-emerald-100">Fill in the details to get your property listed</p>
-          </div>
+          <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-8 py-6">
+              <h1 className="text-2xl md:text-3xl font-semibold text-white mb-2">List Your Property</h1>
+              <p className="text-emerald-100">Fill in the details to get your property listed</p>
+              {isUnverifiedAgency && (
+                <div className="mt-3 bg-yellow-400/20 border border-yellow-400/30 rounded-lg px-3 py-2">
+                  <p className="text-yellow-100 text-sm">
+                    <AlertCircle className="inline h-4 w-4 mr-1" />
+                    Your agency is not yet verified. Properties will be marked as "Unverified" until verification is complete.
+                  </p>
+                </div>
+              )}
+            </div>
 
           <div className="p-8">
             <ProgressBar />

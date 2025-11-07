@@ -6,11 +6,15 @@ import { supabase } from '../lib/supabase';
 export interface UserProfile {
   id: string;
   username?: string;
+  name?: string;
   avatar_url?: string;
   role: 'user' | 'landlord' | 'admin' | 'real_estate_agency';
   agency_name?: string;
   is_verified?: boolean;
   has_pending_verification?: boolean;
+  business_registration_number?: string;
+  license_number?: string;
+  manager_names?: string;
 }
 
 // Define the structure of our AppUser, combining Supabase auth and our profile

@@ -11,6 +11,9 @@ interface ProfileForm {
   role?: 'user' | 'landlord' | 'admin' | 'real_estate_agency';
   is_verified?: boolean;
   has_pending_verification?: boolean;
+  business_registration_number?: string;
+  license_number?: string;
+  manager_names?: string;
 }
 
 export default function ProfilePage() {
@@ -37,6 +40,9 @@ export default function ProfilePage() {
           role: data.role,
           is_verified: data.is_verified,
           has_pending_verification: data.has_pending_verification,
+          business_registration_number: data.business_registration_number ?? '',
+          license_number: data.license_number ?? '',
+          manager_names: data.manager_names ?? '',
         });
       }
     };
@@ -104,8 +110,27 @@ export default function ProfilePage() {
         </div>
         <div>
           <label className="block text-sm mb-1">Avatar URL</label>
-          <input name="avatar_url" value={form.avatar_url ?? ''} onChange={onChange} className="w-full border rounded px-3 py-2" />
+          <input name="avatar_url" value={form.avatar_url ?? ''} onChange={onChange} className="w-full border rounded px-3 py-2" placeholder="https://example.com/avatar.jpg" />
+          <p className="text-xs text-gray-500 mt-1">Note: Avatar upload feature coming soon</p>
         </div>
+
+        {/* Agency-specific fields */}
+        {user.profile?.role === 'real_estate_agency' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-3 border rounded">
+            <div>
+              <label className="block text-sm mb-1">Business Registration Number</label>
+              <input name="business_registration_number" value={form.business_registration_number ?? ''} onChange={onChange} className="w-full border rounded px-3 py-2" />
+            </div>
+            <div>
+              <label className="block text-sm mb-1">License Number</label>
+              <input name="license_number" value={form.license_number ?? ''} onChange={onChange} className="w-full border rounded px-3 py-2" />
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Manager Names</label>
+              <input name="manager_names" value={form.manager_names ?? ''} onChange={onChange} className="w-full border rounded px-3 py-2" />
+            </div>
+          </div>
+        )}
 
         {/* Admin-only controls */}
         {user.profile?.role === 'admin' && (
