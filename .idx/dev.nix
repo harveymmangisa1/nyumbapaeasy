@@ -1,3 +1,3 @@
 { pkgs, ... }: {
-  packages = [ pkgs.postgresql ];
-}
+  packages = [ pkgs.postgresql pkgs.supabase-cli ];
+}what
