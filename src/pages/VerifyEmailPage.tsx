@@ -71,7 +71,7 @@ const VerifyEmailPage = () => {
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email,
         token: otp,
-        type: 'signup'
+        type: 'email'
       });
 
       if (verifyError) {
@@ -80,8 +80,8 @@ const VerifyEmailPage = () => {
 
       setSuccess(true);
       setTimeout(() => {
-        navigate('/welcome');
-      }, 1500);
+        navigate('/post-auth');
+      }, 800);
     } catch (err: any) {
       setError(err.message || 'Invalid or expired code. Please try again.');
       setCode(['', '', '', '', '', '']);

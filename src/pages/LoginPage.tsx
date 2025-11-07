@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, KeyRound } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const LoginPage: React.FC = () => {
@@ -10,7 +10,11 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, user, session, loading } = useAuth();
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const { signIn, verifyOtp, user, session, loading } = useAuth();
   const navigate = useNavigate();
   
   // Update document title
@@ -40,29 +44,49 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Safety timeout to avoid endless spinner
-      const timeoutId = window.setTimeout(() => {
-        setIsLoading(false);
-        setError('Login is taking longer than expected. Please try again.');
-      }, 12000);
-
-      // Attempt sign in
+      // Password sign-in path (kept as requested)
       await signIn(email, password);
 
-      // Sanity check: ensure session exists
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        // Optionally, we could navigate immediately; otherwise role-based redirect will happen via useEffect
-        // navigate('/post-auth');
-      }
-
-      window.clearTimeout(timeoutId);
-      // Redirect will be handled by the useEffect above based on user role
+      // Session check (optional, redirect happens via useEffect)
+      await supabase.auth.getSession();
     } catch (err: unknown) {
       console.error('Sign-in failed:', err);
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSendOtp = async () => {
+    try {
+      setError('');
+      setIsSendingOtp(true);
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: true },
+      });
+      if (error) throw error;
+      setOtpSent(true);
+    } catch (err: unknown) {
+      console.error('Send OTP failed:', err);
+      setError(err instanceof Error ? err.message : 'Failed to send code');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setError('');
+      setIsVerifyingOtp(true);
+      await verifyOtp(email, otpCode);
+      // on success, role-based redirect will happen via useEffect
+    } catch (err: unknown) {
+      console.error('Verify OTP failed:', err);
+      setError(err instanceof Error ? err.message : 'Invalid or expired code');
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
@@ -98,6 +122,7 @@ const LoginPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Password Sign-in */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -161,6 +186,54 @@ const LoginPage: React.FC = () => {
                 {isLoading ? 'Logging in...' : 'Login'}
               </button>
             </form>
+
+            {/* Divider */}
+            <div className="my-6 text-center text-sm text-gray-500">OR</div>
+
+            {/* OTP Sign-in */}
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={handleSendOtp}
+                disabled={isSendingOtp || !email}
+                className={`w-full btn btn-outline ${isSendingOtp || !email ? 'opacity-60 cursor-not-allowed' : ''}`}
+              >
+                {isSendingOtp ? 'Sending code...' : 'Send login code to email'}
+              </button>
+
+              {otpSent && (
+                <form onSubmit={handleVerifyOtp} className="space-y-3">
+                  <div>
+                    <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
+                      Enter 6-digit code
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="otp"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]{6}"
+                        maxLength={6}
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value)}
+                        className="input pl-10 tracking-widest"
+                        placeholder="••••••"
+                        required
+                      />
+                      <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isVerifyingOtp}
+                    className={`btn btn-primary w-full ${isVerifyingOtp ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  >
+                    {isVerifyingOtp ? 'Verifying...' : 'Verify & Sign in'}
+                  </button>
+                </form>
+              )}
+            </div>
             
             <div className="mt-6 text-center">
               <p className="text-gray-600">

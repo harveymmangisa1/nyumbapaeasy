@@ -40,7 +40,8 @@ const getProfile = async (userId: string): Promise<UserProfile | null> => {
       .eq('id', userId)
       .single();
 
-    if (status === 406) { // 406 is returned by PostgREST when no rows are found with .single()
+    // 406 is returned by PostgREST when no rows are found with .single()
+    if (status === 406 || !data) {
       return null;
     }
     return data as UserProfile;
@@ -101,9 +102,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       };
       return appUser;
     }
-    
+
+    // If profile could not be created/fetched (RLS or other error),
+    // return a minimal user by attaching a default profile so UI can still render.
     console.warn("Could not find or create a profile for user:", sessionUser.id);
-    return null;
+    return {
+      ...sessionUser,
+      profile: {
+        id: sessionUser.id,
+        role: 'user',
+        is_verified: false,
+        has_pending_verification: false,
+      },
+    } as AppUser;
   };
 
   useEffect(() => {
@@ -114,16 +125,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setSession(initialSession);
 
         if (initialSession?.user) {
+          // Set minimal user quickly to reduce UI flicker, then hydrate
+          setUser({ ...(initialSession.user as SupabaseUser), profile: { id: initialSession.user.id, role: 'user', is_verified: false, has_pending_verification: false } } as AppUser);
           try {
             const appUser = await fetchUser(initialSession.user);
             setUser(appUser);
           } catch (e) {
             console.error('fetchUser (initial) failed:', e);
-            setUser(null);
           }
+        } else {
+          setUser(null);
         }
       } catch (e) {
         console.error('getSession failed:', e);
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -131,17 +146,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     getInitialSession();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       setLoading(true);
       try {
         setSession(newSession);
         if (newSession?.user) {
+          // Set minimal user immediately, then hydrate
+          setUser({ ...(newSession.user as SupabaseUser), profile: { id: newSession.user.id, role: 'user', is_verified: false, has_pending_verification: false } } as AppUser);
           try {
             const appUser = await fetchUser(newSession.user);
             setUser(appUser);
           } catch (e) {
             console.error('fetchUser (onAuthStateChange) failed:', e);
-            setUser(null);
           }
         } else {
           setUser(null);
@@ -178,6 +194,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // If you use magic links instead of numeric OTP codes, do not call verifyOtp on client.
+  // For numeric OTP email codes, keep type: 'email'. For password recovery, use type: 'recovery'.
   const verifyOtp = async (email: string, token: string) => {
     const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
     if (error) {

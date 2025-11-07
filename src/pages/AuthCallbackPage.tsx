@@ -11,25 +11,23 @@ const AuthCallbackPage = () => {
   useEffect(() => {
     const handleEmailConfirmation = async () => {
       try {
-        const { error } = await supabase.auth.getSession();
-        
-        if (error) {
-          setStatus('error');
-          setMessage('Email confirmation failed. Please try again.');
-          setTimeout(() => navigate('/login'), 3000);
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          setStatus('success');
+          setMessage('Authentication successful! Redirecting...');
+          setTimeout(() => navigate('/post-auth'), 1000);
           return;
         }
 
-        setStatus('success');
-        setMessage('Email confirmed successfully! Redirecting...');
-        
-        setTimeout(() => {
-          navigate('/post-auth');
-        }, 2000);
+        // No active session => fallback to login
+        setStatus('error');
+        setMessage('No active session found. Redirecting to login...');
+        setTimeout(() => navigate('/login'), 2000);
       } catch (err) {
         setStatus('error');
-        setMessage('An error occurred. Redirecting to login...');
-        setTimeout(() => navigate('/login'), 3000);
+        setMessage('An unexpected error occurred. Redirecting to login...');
+        setTimeout(() => navigate('/login'), 2000);
       }
     };
 

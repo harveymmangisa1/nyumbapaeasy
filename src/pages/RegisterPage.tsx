@@ -230,10 +230,11 @@ const RegisterPage = () => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      // Send numeric OTP to email and store profile metadata in user metadata via signup-like options
+      const { data, error } = await supabase.auth.signInWithOtp({
         email: formData.email,
-        password: formData.password,
         options: {
+          shouldCreateUser: true,
           data: {
             name: formData.name,
             role,
@@ -247,7 +248,6 @@ const RegisterPage = () => {
               manager_names: verification.managerNames,
             }),
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
@@ -262,14 +262,11 @@ const RegisterPage = () => {
         return;
       }
 
-      if (data.user) {
-        if ((role === 'landlord' || role === 'real_estate_agency') && !skipVerification) {
-          await uploadVerificationDocuments(data.user.id);
-        }
-        
-        // Redirect to OTP verification page
-        navigate('/verify-email', { state: { email: formData.email } });
-      }
+      // If you want to upload verification docs only after the account is fully created and session exists,
+      // defer uploads to after first login. Otherwise we cannot guarantee a user id at this stage.
+
+      // Redirect to VerifyEmailPage to input the code
+      navigate('/verify-email', { state: { email: formData.email, role } });
     } catch (err) {
       console.error('Registration error:', err);
       setError('An unexpected error occurred during registration.');
@@ -386,14 +383,14 @@ const RegisterPage = () => {
                   email: formData.email,
                 });
                 if (error) {
-                  alert('Error resending verification email: ' + error.message);
+                  alert('Error resending code: ' + error.message);
                 } else {
-                  alert('Verification email sent! Check your inbox.');
+                  alert('A new login/verification code has been sent to your email.');
                 }
               }}
               className="w-full text-slate-600 hover:text-slate-800 text-sm font-medium transition-colors"
             >
-              Resend verification email
+              Resend code
             </button>
           </div>
         </div>
