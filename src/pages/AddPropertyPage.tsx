@@ -42,12 +42,12 @@ const AddPropertyPage = () => {
   const [hasWaterSupply, setHasWaterSupply] = useState(false);
   
   // Additional amenities
-  const [selectedAmenities, setSelectedAmenities] = useState([]);
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [customAmenity, setCustomAmenity] = useState('');
   
   // Images
-  const [coverImage, setCoverImage] = useState(null);
-  const [additionalImages, setAdditionalImages] = useState([]);
+  const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [additionalImages, setAdditionalImages] = useState<File[]>([]);
   
   // Landlord info
   const [landlordName, setLandlordName] = useState('');
@@ -61,7 +61,7 @@ const AddPropertyPage = () => {
   const [petPolicy, setPetPolicy] = useState('not_allowed');
   const [smokingPolicy, setSmokingPolicy] = useState('not_allowed');
   
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const canAddProperty = user?.profile.is_verified || user?.profile.role === 'real_estate_agency';
   const isUnverifiedAgency = user?.profile.role === 'real_estate_agency' && !user?.profile.is_verified;
@@ -85,7 +85,7 @@ const AddPropertyPage = () => {
     );
   }
 
-  const districts = {
+  const districts: Record<string, Record<string, string[]>> = {
     Lilongwe: {
       'Area 25': ['Sector 1', 'Sector 2', 'Sector 3'],
       'Area 47': ['Sector A', 'Sector B', 'Sector C'],
@@ -108,13 +108,13 @@ const AddPropertyPage = () => {
     'Playground', 'Shopping Nearby', 'School Nearby', 'Hospital Nearby'
   ];
 
-  const handleAddAmenity = (amenity) => {
+  const handleAddAmenity = (amenity: string) => {
     if (!selectedAmenities.includes(amenity)) {
       setSelectedAmenities([...selectedAmenities, amenity]);
     }
   };
 
-  const handleRemoveAmenity = (amenity) => {
+  const handleRemoveAmenity = (amenity: string) => {
     setSelectedAmenities(selectedAmenities.filter(a => a !== amenity));
   };
 
@@ -125,17 +125,17 @@ const AddPropertyPage = () => {
     }
   };
 
-  const handleImageUpload = (e, type) => {
-    const files = Array.from(e.target.files);
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'additional') => {
+    const files = Array.from(e.target.files || []);
     if (type === 'cover') {
-      setCoverImage(files[0]);
+      setCoverImage(files[0] as File);
     } else {
-      setAdditionalImages([...additionalImages, ...files].slice(0, 9));
+      setAdditionalImages([...additionalImages, ...files as File[]].slice(0, 9));
     }
   };
 
-  const validateStep = (step) => {
-    const newErrors = {};
+  const validateStep = (step: number) => {
+    const newErrors: Record<string, string> = {};
     
     if (step === 1) {
       if (!listingType) newErrors.listingType = 'Please select listing type';
@@ -144,7 +144,7 @@ const AddPropertyPage = () => {
       if (title.trim().length < 10) newErrors.title = 'Title must be at least 10 characters';
       if (!description.trim()) newErrors.description = 'Description is required';
       if (description.trim().length < 50) newErrors.description = 'Description must be at least 50 characters';
-      if (!price || price <= 0) newErrors.price = 'Valid price is required';
+      if (!price || Number(price) <= 0) newErrors.price = 'Valid price is required';
     }
     
     if (step === 2) {
@@ -154,8 +154,8 @@ const AddPropertyPage = () => {
     }
     
     if (step === 3) {
-      if (!bedrooms || bedrooms < 0) newErrors.bedrooms = 'Valid number of bedrooms required';
-      if (!bathrooms || bathrooms < 0) newErrors.bathrooms = 'Valid number of bathrooms required';
+      if (!bedrooms || Number(bedrooms) < 0) newErrors.bedrooms = 'Valid number of bedrooms required';
+      if (!bathrooms || Number(bathrooms) < 0) newErrors.bathrooms = 'Valid number of bathrooms required';
     }
     
     if (step === 4) {
@@ -226,7 +226,7 @@ const AddPropertyPage = () => {
     </div>
   );
 
-  const ErrorMessage = ({ message }) => (
+  const ErrorMessage = ({ message }: { message: string }) => (
     message ? (
       <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
         <AlertCircle className="h-4 w-4" />
