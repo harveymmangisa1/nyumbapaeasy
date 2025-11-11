@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
-import { Session, User as SupabaseUser, AuthError } from '@supabase/supabase-js';
+import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
 // Define the structure of a user profile
@@ -164,11 +164,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             console.error('fetchUser (onAuthStateChange) failed:', e);
           }
         } else {
+          // User signed out - ensure user is null
           setUser(null);
         }
       } catch (e) {
         console.error('onAuthStateChange handler error:', e);
         setUser(null);
+        setSession(null);
       } finally {
         setLoading(false);
       }
@@ -187,8 +189,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    try {
+      // Sign out from Supabase first
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Supabase signOut error:', error);
+        // Continue with local state cleanup even if Supabase signOut fails
+      }
+      
+      // Clear all auth state
+      setUser(null);
+      setSession(null);
+      
+      // Clear any local storage items if needed
+      localStorage.removeItem('supabase.auth.token');
+      localStorage.removeItem('supabase.auth.refreshToken');
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Ensure state is cleared even if signOut fails
+      setUser(null);
+      setSession(null);
+      // Don't throw error to prevent UI issues
+    }
   };
 
   const sendOtp = async (email: string) => {

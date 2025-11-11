@@ -34,6 +34,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import PostAuthRedirect from './pages/PostAuthRedirect';
 import ProtectedRoute from './components/routing/ProtectedRoute';
 import UnauthorizedPage from './pages/UnauthorizedPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 function App() {
   return (
@@ -88,6 +89,9 @@ function App() {
                       <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
                       <Route path="/admin/verification" element={<AdminVerificationPage />} />
                     </Route>
+
+                    {/* 404 catch-all route */}
+                    <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </main>
                 <Footer />

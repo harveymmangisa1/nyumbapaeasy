@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Home, User, PlusCircle, LogOut, CheckCircle, Clock, Building, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -9,7 +9,6 @@ const Header: React.FC = () => {
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,9 +23,16 @@ const Header: React.FC = () => {
     setIsResourcesOpen(false);
   }, [location]);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // Use React Router navigation for better UX
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout handler error:', error);
+      // Still navigate even if logout fails
+      window.location.href = '/';
+    }
   };
 
   const VerificationBadge = () => {
@@ -95,6 +101,7 @@ const Header: React.FC = () => {
                   <div className="border-t border-border my-1"></div>
                   <Link to="/terms" className="dropdown-link">Terms & Conditions</Link>
                   <Link to="/privacy" className="dropdown-link">Privacy Policy</Link>
+                  <Link to="/cookies" className="dropdown-link">Cookie Policy</Link>
                 </div>
               )}
             </div>
@@ -132,7 +139,7 @@ const Header: React.FC = () => {
                       )}
                     </div>
                     <div className="flex flex-col items-start">
-                      <span className="text-sm font-medium text-text-primary">{user.name || user.email}</span>
+                      <span className="text-sm font-medium text-text-primary">{user.profile?.name || user.email}</span>
                       <span className="text-xs text-text-secondary capitalize">{user.profile.role?.replace('_', ' ')}</span>
                     </div>
                     <VerificationBadge />
@@ -178,12 +185,17 @@ const Header: React.FC = () => {
           <div className="px-2 py-4 space-y-2">
             <Link to="/" className="mobile-nav-link">Home</Link>
             <Link to="/properties" className="mobile-nav-link"><Building className="h-4 w-4 mr-3" />Properties</Link>
-            {/* Add other mobile links here */}
+            <Link to="/about" className="mobile-nav-link">About Us</Link>
+            <Link to="/faq" className="mobile-nav-link">FAQ</Link>
+            <Link to="/contact" className="mobile-nav-link">Contact</Link>
+            <Link to="/terms" className="mobile-nav-link">Terms & Conditions</Link>
+            <Link to="/privacy" className="mobile-nav-link">Privacy Policy</Link>
+            <Link to="/cookies" className="mobile-nav-link">Cookie Policy</Link>
             <div className="border-t border-border pt-4 mt-4 space-y-2">
               {user ? (
                 <>
                   <div className="px-3 mb-2">
-                    <p className="font-semibold text-text-primary">{user.name || user.email}</p>
+                    <p className="font-semibold text-text-primary">{user.profile?.name || user.email}</p>
                     <p className="text-sm text-text-secondary capitalize">{user.profile.role?.replace('_', ' ')}</p>
                     <VerificationBadge />
                   </div>
