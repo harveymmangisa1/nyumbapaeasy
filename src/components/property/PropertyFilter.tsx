@@ -130,6 +130,23 @@ const PropertyFilter: React.FC<PropertyFilterProps> = ({ onFilter, initialFilter
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Home className="h-4 w-4 inline mr-1" />
+                  Category
+                </label>
+                <select
+                  name="category"
+                  value={filters.category || ''}
+                  onChange={handleInputChange}
+                  className="select w-full"
+                >
+                  <option value="">Any</option>
+                  <option value="residential">Residential</option>
+                  <option value="business">Business</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Home className="h-4 w-4 inline mr-1" />
                   Property Type
                 </label>
                 <select
@@ -139,10 +156,30 @@ const PropertyFilter: React.FC<PropertyFilterProps> = ({ onFilter, initialFilter
                   className="select w-full"
                 >
                   <option value="">Any</option>
-                  <option value="house">House</option>
-                  <option value="apartment">Apartment</option>
-                  <option value="room">Room</option>
-                  <option value="commercial">Commercial</option>
+                  {filters.category === 'residential' && (
+                    <>
+                      <option value="house">House</option>
+                      <option value="apartment">Apartment</option>
+                      <option value="room">Room</option>
+                    </>
+                  )}
+                  {filters.category === 'business' && (
+                    <>
+                      <option value="hotel">Hotel</option>
+                      <option value="lodge">Lodge</option>
+                      <option value="shop">Shop</option>
+                    </>
+                  )}
+                  {!filters.category && (
+                    <>
+                      <option value="house">House</option>
+                      <option value="apartment">Apartment</option>
+                      <option value="room">Room</option>
+                      <option value="hotel">Hotel</option>
+                      <option value="lodge">Lodge</option>
+                      <option value="shop">Shop</option>
+                    </>
+                  )}
                 </select>
               </div>
             </div>

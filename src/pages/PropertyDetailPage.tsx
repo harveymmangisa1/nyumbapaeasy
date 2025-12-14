@@ -381,6 +381,12 @@ const PropertyDetailPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Property Summary</h2>
               <ul className="space-y-3">
+                {(property as any).category && (
+                  <li className="flex justify-between border-b border-gray-100 pb-2">
+                    <span className="text-gray-600">Category:</span>
+                    <span className="font-medium capitalize">{(property as any).category}</span>
+                  </li>
+                )}
                 <li className="flex justify-between border-b border-gray-100 pb-2">
                   <span className="text-gray-600">Property Type:</span>
                   <span className="font-medium capitalize">{property.type}</span>

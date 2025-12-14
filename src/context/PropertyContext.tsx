@@ -59,6 +59,7 @@ export interface SearchFilters {
   maxPrice?: number;
   bedrooms?: number;
   propertyType?: string;
+  category?: string;
   is_self_contained?: boolean;
 }
 
@@ -123,6 +124,7 @@ export const PropertyProvider = ({ children }: PropertyProviderProps) => {
       if (filters.maxPrice !== undefined && property.price > filters.maxPrice) return false;
       if (filters.bedrooms !== undefined && property.bedrooms < filters.bedrooms) return false;
       if (filters.propertyType && property.type !== filters.propertyType) return false;
+      if (filters.category && (property as any).category !== filters.category) return false;
       if (filters.is_self_contained !== undefined && property.is_self_contained !== filters.is_self_contained) return false;
       return true;
     });

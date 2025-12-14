@@ -59,6 +59,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
           <div className="flex items-center text-gray-300 text-sm">
             <MapPin className="h-4 w-4 mr-1.5 flex-shrink-0" />
             <span className="truncate">{property.location}, {property.district}</span>
+            {(property as any).category && <span className="ml-2 truncate capitalize">{`(${(property as any).category})`}</span>}
           </div>
         </div>
       </div>

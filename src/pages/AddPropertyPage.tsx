@@ -8,6 +8,7 @@ const AddPropertyPage = () => {
   const totalSteps = 5;
 
   // Form state
+  const [propertyCategory, setPropertyCategory] = useState('');
   const [listingType, setListingType] = useState('rent');
   const [propertyType, setPropertyType] = useState('');
   const [title, setTitle] = useState('');
@@ -138,6 +139,7 @@ const AddPropertyPage = () => {
     const newErrors: Record<string, string> = {};
     
     if (step === 1) {
+      if (!propertyCategory) newErrors.propertyCategory = 'Please select property category';
       if (!listingType) newErrors.listingType = 'Please select listing type';
       if (!propertyType) newErrors.propertyType = 'Please select property type';
       if (!title.trim()) newErrors.title = 'Title is required';
@@ -185,6 +187,7 @@ const AddPropertyPage = () => {
   const handleSubmit = () => {
     if (validateStep(currentStep)) {
       console.log('Form submitted', {
+        propertyCategory,
         listingType, propertyType, title, description, price,
         district, area, sector, specificLocation,
         bedrooms, bathrooms, squareMeters,
@@ -261,6 +264,30 @@ const AddPropertyPage = () => {
               <div className="space-y-6">
                 <h2 className="text-xl font-semibold text-slate-900 mb-6">Basic Information</h2>
 
+                {/* Property Category */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-3">
+                    Property Category <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {['residential', 'business'].map((category) => (
+                      <button
+                        key={category}
+                        type="button"
+                        onClick={() => setPropertyCategory(category)}
+                        className={`p-4 rounded-xl border-2 transition-all ${
+                          propertyCategory === category
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                            : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <span className="font-medium capitalize">{category}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <ErrorMessage message={errors.propertyCategory} />
+                </div>
+
                 {/* Listing Type */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-3">
@@ -291,12 +318,18 @@ const AddPropertyPage = () => {
                     Property Type <span className="text-red-500">*</span>
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {[
-                      { value: 'house', label: 'House', icon: Home },
-                      { value: 'apartment', label: 'Apartment', icon: Home },
-                      { value: 'room', label: 'Room', icon: Bed },
-                      { value: 'commercial', label: 'Commercial', icon: Home }
-                    ].map((type) => {
+                    {(propertyCategory === 'residential'
+                      ? [
+                          { value: 'house', label: 'House', icon: Home },
+                          { value: 'apartment', label: 'Apartment', icon: Home },
+                          { value: 'room', label: 'Room', icon: Bed },
+                        ]
+                      : [
+                          { value: 'hotel', label: 'Hotel', icon: Home },
+                          { value: 'lodge', label: 'Lodge', icon: Home },
+                          { value: 'shop', label: 'Shop', icon: Home },
+                        ]
+                    ).map((type) => {
                       const Icon = type.icon;
                       return (
                         <button
