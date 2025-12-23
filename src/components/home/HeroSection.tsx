@@ -56,7 +56,7 @@ const HeroSection = () => {
                     className="input w-full pl-12 pr-4 py-3 rounded-lg bg-surface/10 text-surface placeholder:text-gray-400 border-0 focus:ring-2 focus:ring-accent"
                   />
                 </div>
-                <button type="submit" className="btn btn-primary px-8 py-3 text-base">
+                <button type="submit" className="btn btn-primary px-8 py-3 text-base flex-shrink-0">
                   Search
                 </button>
               </div>
