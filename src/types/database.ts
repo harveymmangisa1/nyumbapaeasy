@@ -2,7 +2,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'landlord' | 'renter' | 'real_estate_agency';
+  role: 'admin' | 'landlord' | 'renter' | 'real_estate_agency' | 'lodge_owner' | 'bnb_owner';
   created_at: string;
 }
 
@@ -11,10 +11,19 @@ export interface Property {
   title: string;
   description: string;
   price: number;
+  currency: string;
   location: string;
+  district: string;
+  images: string[];
+  bedrooms: number;
+  bathrooms: number;
+  area: number;
+  listing_type: 'rent' | 'sale' | 'lease';
+  status: 'available' | 'sold' | 'rented';
+  amenities: string[];
+  is_verified: boolean;
+  views: number;
   created_at: string;
-  views?: number;
-  // Add other property fields
 }
 
 // Verification document interface
@@ -37,7 +46,7 @@ export interface VerificationDocument {
 export interface Profile {
   id: string;
   name: string;
-  role: 'admin' | 'landlord' | 'renter' | 'real_estate_agency';
+  role: 'admin' | 'landlord' | 'renter' | 'real_estate_agency' | 'lodge_owner' | 'bnb_owner';
   business_registration_number?: string | null;
   license_number?: string | null;
   manager_names?: string | null;

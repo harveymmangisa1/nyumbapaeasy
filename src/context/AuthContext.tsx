@@ -8,7 +8,7 @@ export interface UserProfile {
   username?: string;
   name?: string;
   avatar_url?: string;
-  role: 'user' | 'landlord' | 'admin' | 'real_estate_agency';
+  role: 'user' | 'landlord' | 'admin' | 'real_estate_agency' | 'lodge_owner' | 'bnb_owner';
   agency_name?: string;
   is_verified?: boolean;
   has_pending_verification?: boolean;
@@ -96,7 +96,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     if (!profile) {
       // Create profile if it doesn't exist, e.g., for a new user
-      profile = await createProfile(sessionUser.id, sessionUser.email);
+      // Extract role from metadata, default to 'user' if not present
+      // Map 'renter' from registration to 'user' database role
+      let role = sessionUser.user_metadata?.role;
+      if (role === 'renter') role = 'user';
+
+      profile = await createProfile(sessionUser.id, sessionUser.email, role);
     }
 
     if (profile) {
@@ -196,15 +201,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.error('Supabase signOut error:', error);
         // Continue with local state cleanup even if Supabase signOut fails
       }
-      
+
       // Clear all auth state
       setUser(null);
       setSession(null);
-      
+
       // Clear any local storage items if needed
       localStorage.removeItem('supabase.auth.token');
       localStorage.removeItem('supabase.auth.refreshToken');
-      
+
     } catch (error) {
       console.error('Logout error:', error);
       // Ensure state is cleared even if signOut fails

@@ -34,26 +34,31 @@ for each row execute function public.set_updated_at();
 alter table public.profiles enable row level security;
 
 -- Policy: users can select any profile (optional: open-read)
-create policy if not exists "Profiles are viewable by everyone"
+-- Policy: users can select any profile (optional: open-read)
+drop policy if exists "Profiles are viewable by everyone" on public.profiles;
+create policy "Profiles are viewable by everyone"
   on public.profiles
   for select
   using (true);
 
 -- Policy: users can insert their own profile (id must equal auth.uid())
-create policy if not exists "Users can insert their own profile"
+drop policy if exists "Users can insert their own profile" on public.profiles;
+create policy "Users can insert their own profile"
   on public.profiles
   for insert
   with check ( id = auth.uid() );
 
 -- Policy: users can update their own profile
-create policy if not exists "Users can update own profile"
+drop policy if exists "Users can update own profile" on public.profiles;
+create policy "Users can update own profile"
   on public.profiles
   for update
   using ( id = auth.uid() )
   with check ( id = auth.uid() );
 
 -- Optional: restrict delete to owners only (or admins via a future role)
-create policy if not exists "Users can delete own profile"
+drop policy if exists "Users can delete own profile" on public.profiles;
+create policy "Users can delete own profile"
   on public.profiles
   for delete
   using ( id = auth.uid() );

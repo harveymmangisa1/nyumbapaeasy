@@ -46,14 +46,16 @@ for each row execute function public.set_property_owner();
 
 -- Policies
 -- Select: open read (adjust if needed)
-create policy if not exists "Properties are viewable by everyone"
+drop policy if exists "Properties are viewable by everyone" on public.properties;
+create policy "Properties are viewable by everyone"
   on public.properties
   for select
   to anon, authenticated
   using (true);
 
 -- Insert: agencies and admins can create (owner_id must be current user)
-create policy if not exists "Agencies and admins can insert properties"
+drop policy if exists "Agencies and admins can insert properties" on public.properties;
+create policy "Agencies and admins can insert properties"
   on public.properties
   for insert
   to authenticated
@@ -68,7 +70,8 @@ create policy if not exists "Agencies and admins can insert properties"
   );
 
 -- Update: owners or admins
-create policy if not exists "Owners (and admins) can update properties"
+drop policy if exists "Owners (and admins) can update properties" on public.properties;
+create policy "Owners (and admins) can update properties"
   on public.properties
   for update
   to authenticated
@@ -86,7 +89,8 @@ create policy if not exists "Owners (and admins) can update properties"
   );
 
 -- Delete: owners or admins
-create policy if not exists "Owners (and admins) can delete properties"
+drop policy if exists "Owners (and admins) can delete properties" on public.properties;
+create policy "Owners (and admins) can delete properties"
   on public.properties
   for delete
   to authenticated

@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-export type Role = 'admin' | 'landlord' | 'renter' | 'real_estate_agency' | 'user';
+export type Role = 'admin' | 'landlord' | 'renter' | 'real_estate_agency' | 'lodge_owner' | 'bnb_owner' | 'user';
 
 interface ProtectedRouteProps {
   requireAuth?: boolean; // default true
