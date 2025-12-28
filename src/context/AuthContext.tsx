@@ -155,13 +155,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     getInitialSession();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      console.debug('Auth event:', event);
+
+      // Don't trigger loading state for token refresh unless no user is present
+      if (event === 'TOKEN_REFRESHED' && user) {
+        setSession(newSession);
+        return;
+      }
+
       setLoading(true);
       try {
         setSession(newSession);
         if (newSession?.user) {
-          // Set minimal user immediately, then hydrate
-          setUser({ ...(newSession.user as SupabaseUser), profile: { id: newSession.user.id, role: 'user', is_verified: false, has_pending_verification: false } } as AppUser);
+          // Set minimal user immediately if no user exists, then hydrate
+          if (!user || user.id !== newSession.user.id) {
+            setUser({ ...(newSession.user as SupabaseUser), profile: { id: newSession.user.id, role: 'user', is_verified: false, has_pending_verification: false } } as AppUser);
+          }
           try {
             const appUser = await fetchUser(newSession.user);
             setUser(appUser);
