@@ -8,9 +8,10 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
-"""
+
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,7 +26,7 @@ SECRET_KEY = 'django-insecure-f$f!3h#m!_hrw#de-8p&vl_(2xxbe(-9ss9un9r$p37xc0wcth
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']  # Update this with your actual domain later
+ALLOWED_HOSTS = ['https://nyumbapaeasy.vercel.app']  # Update this with your actual domain later
 
 
 INSTALLED_APPS = [
