@@ -15,7 +15,7 @@ const PropertyListingPage: React.FC = () => {
   const [isGridView, setIsGridView] = useState(true);
   const [sortBy, setSortBy] = useState<'relevance' | 'price_asc' | 'price_desc' | 'newest'>('relevance');
   const [quick, setQuick] = useState<{ verified?: boolean; newOnly?: boolean; under500k?: boolean }>({});
-  
+
   // Get initial filters from URL params
   const initialFilters: SearchFilters = useMemo(() => ({
     location: searchParams.get('location') || undefined,
@@ -25,26 +25,26 @@ const PropertyListingPage: React.FC = () => {
     propertyType: searchParams.get('type') || undefined,
     isSelfContained: searchParams.get('isSelfContained') === 'true' ? true : undefined,
   }), [searchParams]);
-  
+
   // Update document title
   useEffect(() => {
     document.title = 'Property Listings | NyumbaPaeasy';
   }, []);
-  
+
   // Apply filters and update URL
   const handleFilter = useCallback((filters: SearchFilters) => {
     // Update URL with filters
     const newSearchParams = new URLSearchParams();
-    
+
     if (filters.location) newSearchParams.set('location', filters.location);
     if (filters.minPrice) newSearchParams.set('minPrice', filters.minPrice.toString());
     if (filters.maxPrice) newSearchParams.set('maxPrice', filters.maxPrice.toString());
     if (filters.bedrooms) newSearchParams.set('bedrooms', filters.bedrooms.toString());
     if (filters.propertyType) newSearchParams.set('type', filters.propertyType);
     if (filters.isSelfContained) newSearchParams.set('isSelfContained', filters.isSelfContained.toString());
-    
+
     setSearchParams(newSearchParams);
-    
+
     // Search properties
     setLoading(true);
     let results = searchProperties(filters);
@@ -74,12 +74,12 @@ const PropertyListingPage: React.FC = () => {
     setFilteredProperties(results);
     setLoading(false);
   }, [searchProperties, setSearchParams, quick, sortBy]);
-  
+
   // Initialize search based on URL params
   useEffect(() => {
     handleFilter(initialFilters);
   }, [handleFilter, initialFilters]);
-  
+
   return (
     <div className="bg-gradient-to-b from-gray-50 to-white min-h-screen py-8">
       <div className="container">
@@ -96,19 +96,27 @@ const PropertyListingPage: React.FC = () => {
             Discover the perfect property that matches your needs
           </p>
         </div>
-        
+
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Filters Sidebar */}
           <div className="w-full lg:w-1/4 order-2 lg:order-1">
-            <div className="bg-white rounded-xl shadow-md p-6 lg:sticky lg:top-24">
-              <div className="flex items-center mb-4">
-                <SlidersHorizontal className="h-5 w-5 text-emerald-600 mr-2" />
-                <h2 className="text-lg font-semibold text-gray-800">Filters</h2>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 lg:sticky lg:top-24">
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">
+                <div className="flex items-center">
+                  <SlidersHorizontal className="h-5 w-5 text-emerald-600 mr-2" />
+                  <h2 className="text-lg font-bold text-slate-800">Filters</h2>
+                </div>
+                <button
+                  className="lg:hidden text-sm font-medium text-emerald-600"
+                  onClick={() => { /* Potential mobile filter drawer toggle */ }}
+                >
+                  Close
+                </button>
               </div>
               <PropertyFilter onFilter={handleFilter} initialFilters={initialFilters} />
             </div>
           </div>
-          
+
           {/* Main Content */}
           <div className="w-full lg:w-3/4 order-1 lg:order-2">
             {/* Results Header */}
@@ -122,7 +130,7 @@ const PropertyListingPage: React.FC = () => {
                     Showing <span className="font-semibold">{filteredProperties.length}</span> properties
                   </p>
                 </div>
-                
+
                 <div className="flex items-center space-x-4">
                   {/* Clear All */}
                   <button
@@ -136,28 +144,26 @@ const PropertyListingPage: React.FC = () => {
                   <div className="flex items-center bg-gray-100 rounded-lg p-1">
                     <button
                       onClick={() => setIsGridView(true)}
-                      className={`p-2 rounded-md transition-colors ${
-                        isGridView 
-                          ? 'bg-white text-emerald-600 shadow-sm' 
+                      className={`p-2 rounded-md transition-colors ${isGridView
+                          ? 'bg-white text-emerald-600 shadow-sm'
                           : 'text-gray-600 hover:text-gray-800'
-                      }`}
+                        }`}
                       aria-label="Grid view"
                     >
                       <GridIcon className="h-5 w-5" />
                     </button>
                     <button
                       onClick={() => setIsGridView(false)}
-                      className={`p-2 rounded-md transition-colors ${
-                        !isGridView 
-                          ? 'bg-white text-emerald-600 shadow-sm' 
+                      className={`p-2 rounded-md transition-colors ${!isGridView
+                          ? 'bg-white text-emerald-600 shadow-sm'
                           : 'text-gray-600 hover:text-gray-800'
-                      }`}
+                        }`}
                       aria-label="List view"
                     >
                       <List className="h-5 w-5" />
                     </button>
                   </div>
-                  
+
                   {/* Sort Dropdown - could be expanded in the future */}
                   <div className="relative">
                     <button className="btn btn-outline flex items-center space-x-1">
@@ -168,7 +174,7 @@ const PropertyListingPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Property Grid/List */}
             {loading ? (
               <div className={`${isGridView ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'space-y-6'}`}>
@@ -200,7 +206,7 @@ const PropertyListingPage: React.FC = () => {
                 <p className="text-gray-600 mb-6 max-w-md mx-auto">
                   Try adjusting your search filters to see more results. We have properties in various locations across Malawi.
                 </p>
-                <button 
+                <button
                   onClick={() => handleFilter({})}
                   className="btn btn-primary px-6 py-3"
                 >

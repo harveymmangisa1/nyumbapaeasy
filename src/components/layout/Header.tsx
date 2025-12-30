@@ -1,47 +1,104 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Home, User, PlusCircle, LogOut, CheckCircle, Clock, Building, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+
+// Navigation configuration - centralized for easy maintenance
+const NAV_LINKS = [
+  { path: '/', label: 'Home', icon: Home },
+  { path: '/properties', label: 'Properties', icon: Building },
+];
+
+const RESOURCES_LINKS = [
+  { path: '/about', label: 'About Us' },
+  { path: '/faq', label: 'FAQ' },
+  { path: '/contact', label: 'Contact' },
+];
+
+const LEGAL_LINKS = [
+  { path: '/terms', label: 'Terms & Conditions' },
+  { path: '/privacy', label: 'Privacy Policy' },
+  { path: '/cookies', label: 'Cookie Policy' },
+];
+
+const ROLE_DASHBOARDS = {
+  landlord: { path: '/dashboard', label: 'Dashboard' },
+  admin: { path: '/admin/dashboard', label: 'Admin Panel' },
+  real_estate_agency: { path: '/agency/dashboard', label: 'Agency Dashboard' },
+};
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  const resourcesRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
+  // Handle scroll effect with passive listener for better performance
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-    window.addEventListener('scroll', handleScroll);
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Close mobile menu on route change
   useEffect(() => {
     setIsMenuOpen(false);
     setIsResourcesOpen(false);
-  }, [location]);
+    setIsUserMenuOpen(false);
+  }, [location.pathname]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (resourcesRef.current && !resourcesRef.current.contains(event.target as Node)) {
+        setIsResourcesOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Handle keyboard navigation for accessibility
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, callback: () => void) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      callback();
+    }
+  }, []);
 
   const handleLogout = async () => {
     try {
       await logout();
-      // Use React Router navigation for better UX
-      window.location.href = '/';
+      navigate('/');
     } catch (error) {
-      console.error('Logout handler error:', error);
-      // Still navigate even if logout fails
-      window.location.href = '/';
+      console.error('Logout error:', error);
+      navigate('/');
     }
   };
 
+  // Computed values
+  const canListProperty = user && ['landlord', 'admin', 'real_estate_agency'].includes(user.profile.role);
+  const userDashboard = user ? ROLE_DASHBOARDS[user.profile.role as keyof typeof ROLE_DASHBOARDS] : null;
+
+  // Verification Badge Component
   const VerificationBadge = () => {
     if (!user) return null;
 
     if (user.profile.is_verified) {
       return (
-        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          <CheckCircle className="-ml-0.5 mr-1 h-3 w-3" />
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+          <CheckCircle className="w-3 h-3" />
           Verified
         </span>
       );
@@ -49,199 +106,285 @@ const Header: React.FC = () => {
 
     if (user.profile.has_pending_verification) {
       return (
-        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-          <Clock className="-ml-0.5 mr-1 h-3 w-3" />
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+          <Clock className="w-3 h-3" />
           Pending
         </span>
       );
     }
 
-    return null; // Simplified: verification CTA can be in the profile page
+    return null;
+  };
+
+  // User Avatar Component
+  const UserAvatar = ({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) => {
+    const sizeClasses = {
+      sm: 'w-8 h-8 text-sm',
+      md: 'w-10 h-10 text-base',
+      lg: 'w-12 h-12 text-lg'
+    };
+
+    if (user?.profile.avatar_url) {
+      return (
+        <img
+          src={user.profile.avatar_url}
+          alt={user.profile?.name || 'User'}
+          className={`${sizeClasses[size]} rounded-full object-cover`}
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+            const parent = e.currentTarget.parentElement;
+            if (parent) {
+              parent.innerHTML = `<div class="${sizeClasses[size]} rounded-full bg-primary text-white flex items-center justify-center font-semibold">${(user.profile?.name?.[0] || user.email[0]).toUpperCase()}</div>`;
+            }
+          }}
+        />
+      );
+    }
+
+    return (
+      <div className={`${sizeClasses[size]} rounded-full bg-primary text-white flex items-center justify-center font-semibold`}>
+        {(user?.profile?.name?.[0] || user?.email[0] || 'U').toUpperCase()}
+      </div>
+    );
   };
 
   return (
-    <header
-      className={`fixed top-0 w-full z-50 transition-shadow duration-300 ${
-        isScrolled ? 'shadow-md bg-surface/90 backdrop-blur-sm' : 'bg-surface/80'
-      }`}>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center space-x-2 group">
-            <div className="flex items-center justify-center w-8 h-8 bg-primary rounded-lg">
-              <Home className="h-4 w-4 text-white" />
-            </div>
-            <span className="text-xl font-bold text-primary tracking-tight">NyumbaPaeasy</span>
+    <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white shadow-md' : 'bg-white'}`}>
+      <nav className="container mx-auto px-4 sm:px-6 lg:px-8" aria-label="Main navigation">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <Link
+            to="/"
+            className="flex items-center space-x-2 text-primary font-bold text-xl hover:opacity-80 transition-opacity"
+            aria-label="NyumbaPaeasy Home"
+          >
+            <Home className="w-6 h-6" />
+            <span>NyumbaPaeasy</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-2">
-            <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>
-              Home
-            </Link>
-            <Link to="/properties" className={`nav-link ${location.pathname.startsWith('/properties') ? 'active' : ''}`}>
-              <Building className="h-4 w-4 mr-1.5" />
-              Properties
-            </Link>
+          <div className="hidden md:flex items-center space-x-1">
+            {NAV_LINKS.map(({ path, label, icon: Icon }) => (
+              <Link
+                key={path}
+                to={path}
+                className={`nav-link ${location.pathname === path ? 'active' : ''}`}
+              >
+                <Icon className="w-4 h-4 mr-1" />
+                {label}
+              </Link>
+            ))}
 
-            <div className="relative">
+            {/* Resources Dropdown */}
+            <div className="relative" ref={resourcesRef}>
               <button
                 onClick={() => setIsResourcesOpen(!isResourcesOpen)}
+                onKeyDown={(e) => handleKeyDown(e, () => setIsResourcesOpen(!isResourcesOpen))}
                 aria-expanded={isResourcesOpen}
-                aria-controls="resources-menu"
-                className={`nav-link ${isResourcesOpen ? 'active' : ''}`}>
+                aria-haspopup="true"
+                className={`nav-link ${isResourcesOpen ? 'active' : ''}`}
+              >
                 Resources
-                <ChevronDown className={`ml-1 h-4 w-4 transition-transform duration-200 ${isResourcesOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isResourcesOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isResourcesOpen && (
-                <div id="resources-menu" className="absolute top-full left-0 mt-2 w-56 bg-surface rounded-md shadow-lg border border-border py-1 z-50">
-                  <Link to="/about" className="dropdown-link">About Us</Link>
-                  <Link to="/faq" className="dropdown-link">FAQ</Link>
-                  <Link to="/contact" className="dropdown-link">Contact</Link>
-                  <div className="border-t border-border my-1"></div>
-                  <Link to="/terms" className="dropdown-link">Terms & Conditions</Link>
-                  <Link to="/privacy" className="dropdown-link">Privacy Policy</Link>
-                  <Link to="/cookies" className="dropdown-link">Cookie Policy</Link>
+                <div className="absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-lg py-2 border border-gray-200 animate-fadeIn">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Information
+                  </div>
+                  {RESOURCES_LINKS.map(({ path, label }) => (
+                    <Link key={path} to={path} className="dropdown-link">
+                      {label}
+                    </Link>
+                  ))}
+
+                  <div className="my-2 border-t border-gray-200" />
+
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Legal
+                  </div>
+                  {LEGAL_LINKS.map(({ path, label }) => (
+                    <Link key={path} to={path} className="dropdown-link">
+                      {label}
+                    </Link>
+                  ))}
                 </div>
               )}
             </div>
-          </nav>
+          </div>
 
           {/* Desktop User Menu */}
-          <div className="hidden lg:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <>
-                {(user.profile.role === 'landlord' || user.profile.role === 'admin' || user.profile.role === 'real_estate_agency') && (
-                  <Link to="/add-property" className="btn btn-primary text-sm">
-                    <PlusCircle className="h-4 w-4 mr-2" />
+                {canListProperty && (
+                  <Link
+                    to="/add-property"
+                    className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium shadow-sm hover:shadow-md"
+                  >
+                    <PlusCircle className="w-4 h-4 mr-2" />
                     List Property
                   </Link>
                 )}
-                <div className="relative group">
-                  <div className="flex items-center space-x-2 cursor-pointer p-2 rounded-md hover:bg-gray-100">
-                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-                      {user.profile.avatar_url ? (
-                        <img 
-                          src={user.profile.avatar_url} 
-                          alt="Profile" 
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = '<svg class="h-5 w-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>';
-                            }
-                          }}
-                        />
-                      ) : (
-                        <User className="h-5 w-5 text-text-secondary" />
+
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    onKeyDown={(e) => handleKeyDown(e, () => setIsUserMenuOpen(!isUserMenuOpen))}
+                    className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    aria-expanded={isUserMenuOpen}
+                    aria-haspopup="true"
+                    aria-label="User menu"
+                  >
+                    <UserAvatar size="md" />
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-gray-900">{user.profile?.name || user.email}</p>
+                      <p className="text-xs text-gray-500 capitalize">{user.profile.role?.replace('_', ' ')}</p>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isUserMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg py-2 border border-gray-200 animate-fadeIn">
+                      <div className="px-4 py-3 border-b border-gray-200">
+                        <p className="text-sm font-medium text-gray-900 truncate">{user.profile?.name || user.email}</p>
+                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                        <div className="mt-2">
+                          <VerificationBadge />
+                        </div>
+                      </div>
+
+                      <Link to="/profile" className="dropdown-link">
+                        <User className="w-4 h-4 mr-2 inline" />
+                        My Profile
+                      </Link>
+
+                      {userDashboard && (
+                        <Link to={userDashboard.path} className="dropdown-link">
+                          <Building className="w-4 h-4 mr-2 inline" />
+                          {userDashboard.label}
+                        </Link>
                       )}
+
+                      <div className="my-2 border-t border-gray-200" />
+
+                      <button
+                        onClick={handleLogout}
+                        className="dropdown-link w-full text-left text-red-600 hover:bg-red-50 hover:text-red-700"
+                      >
+                        <LogOut className="w-4 h-4 mr-2 inline" />
+                        Logout
+                      </button>
                     </div>
-                    <div className="flex flex-col items-start">
-                      <span className="text-sm font-medium text-text-primary">{user.profile?.name || user.email}</span>
-                      <span className="text-xs text-text-secondary capitalize">{user.profile.role?.replace('_', ' ')}</span>
-                    </div>
-                    <VerificationBadge />
-                    <ChevronDown className="h-4 w-4 text-text-secondary" />
-                  </div>
-                  {/* User dropdown menu */}
-                  <div className="absolute top-full right-0 mt-2 w-48 bg-surface rounded-md shadow-lg border border-border py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                    <Link to="/profile" className="dropdown-link">My Profile</Link>
-                    {(user.profile.role === 'landlord' || user.profile.role === 'admin') && (
-                      <Link to="/dashboard" className="dropdown-link">Dashboard</Link>
-                    )}
-                    {user.profile.role === 'real_estate_agency' && (
-                      <Link to="/agency/dashboard" className="dropdown-link">Agency Dashboard</Link>
-                    )}
-                    {user.profile.role === 'admin' && (
-                      <Link to="/admin/dashboard" className="dropdown-link">Admin Panel</Link>
-                    )}
-                    <div className="border-t border-border my-1"></div>
-                    <button onClick={handleLogout} className="w-full text-left dropdown-link text-red-600 hover:bg-red-50">
-                      Logout
-                    </button>
-                  </div>
+                  )}
                 </div>
               </>
             ) : (
-              <div className="flex items-center space-x-2">
-                <Link to="/login" className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-primary transition-colors">Login</Link>
-                <Link to="/register" className="btn btn-secondary text-sm">Sign Up</Link>
+              <div className="flex items-center space-x-3">
+                <Link
+                  to="/login"
+                  className="px-4 py-2 text-primary font-medium hover:text-primary-dark transition-colors"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium shadow-sm hover:shadow-md"
+                >
+                  Sign Up
+                </Link>
               </div>
             )}
           </div>
 
           {/* Mobile Menu Button */}
-          <button className="lg:hidden p-2 rounded-md text-text-secondary hover:bg-gray-100" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-expanded={isMenuOpen} aria-controls="mobile-menu">
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            aria-expanded={isMenuOpen}
+            aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+          >
+            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
-      </div>
 
-      {/* Mobile Menu */}
-      {isMenuOpen && (
-        <div id="mobile-menu" className="lg:hidden bg-surface border-t border-border animate-in slide-in-from-top-full duration-300">
-          <div className="px-2 py-4 space-y-2">
-            <Link to="/" className="mobile-nav-link">Home</Link>
-            <Link to="/properties" className="mobile-nav-link"><Building className="h-4 w-4 mr-3" />Properties</Link>
-            <Link to="/about" className="mobile-nav-link">About Us</Link>
-            <Link to="/faq" className="mobile-nav-link">FAQ</Link>
-            <Link to="/contact" className="mobile-nav-link">Contact</Link>
-            <Link to="/terms" className="mobile-nav-link">Terms & Conditions</Link>
-            <Link to="/privacy" className="mobile-nav-link">Privacy Policy</Link>
-            <Link to="/cookies" className="mobile-nav-link">Cookie Policy</Link>
-            <div className="border-t border-border pt-4 mt-4 space-y-2">
-              {user ? (
-                <>
-                  <div className="px-3 mb-2">
-                    <p className="font-semibold text-text-primary">{user.profile?.name || user.email}</p>
-                    <p className="text-sm text-text-secondary capitalize">{user.profile.role?.replace('_', ' ')}</p>
-                    <VerificationBadge />
-                  </div>
-                  <Link to="/profile" className="mobile-nav-link"><User className="h-4 w-4 mr-3" />My Profile</Link>
-                  {(user.profile.role === 'landlord' || user.profile.role === 'admin' || user.profile.role === 'real_estate_agency') && (
-                    <Link to="/add-property" className="mobile-nav-link bg-gray-50"><PlusCircle className="h-4 w-4 mr-3" />List Property</Link>
-                  )}
-                  {(user.profile.role === 'landlord' || user.profile.role === 'admin') && (
-                    <Link to="/dashboard" className="mobile-nav-link">Dashboard</Link>
-                  )}
-                  {user.profile.role === 'real_estate_agency' && (
-                    <Link to="/agency/dashboard" className="mobile-nav-link">Agency Dashboard</Link>
-                  )}
-                  {user.profile.role === 'admin' && (
-                    <Link to="/admin/dashboard" className="mobile-nav-link">Admin Panel</Link>
-                  )}
-                  <button onClick={handleLogout} className="mobile-nav-link text-red-600"><LogOut className="h-4 w-4 mr-3" />Logout</button>
-                </>
-              ) : (
-                <>
-                  <Link to="/login" className="btn btn-outline w-full">Login</Link>
-                  <Link to="/register" className="btn btn-secondary w-full">Sign Up</Link>
-                </>
-              )}
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden absolute top-16 left-0 right-0 bg-white border-t border-gray-200 py-4 px-4 space-y-2 animate-slideDown shadow-xl z-50 max-h-[calc(100vh-64px)] overflow-y-auto">
+            {NAV_LINKS.map(({ path, label, icon: Icon }) => (
+              <Link key={path} to={path} className="mobile-nav-link">
+                <Icon className="w-5 h-5 mr-2" />
+                {label}
+              </Link>
+            ))}
+
+            <div className="py-2">
+              <p className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Resources
+              </p>
+              {[...RESOURCES_LINKS, ...LEGAL_LINKS].map(({ path, label }) => (
+                <Link key={path} to={path} className="mobile-nav-link pl-6 text-sm">
+                  {label}
+                </Link>
+              ))}
             </div>
+
+            {user ? (
+              <div className="pt-4 border-t border-gray-200">
+                <div className="flex items-center space-x-3 px-3 py-2 mb-3">
+                  <UserAvatar size="lg" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{user.profile?.name || user.email}</p>
+                    <p className="text-xs text-gray-500 capitalize truncate">{user.profile.role?.replace('_', ' ')}</p>
+                    <div className="mt-1">
+                      <VerificationBadge />
+                    </div>
+                  </div>
+                </div>
+
+                <Link to="/profile" className="mobile-nav-link">
+                  <User className="w-5 h-5 mr-2" />
+                  My Profile
+                </Link>
+
+                {canListProperty && (
+                  <Link to="/add-property" className="mobile-nav-link text-primary">
+                    <PlusCircle className="w-5 h-5 mr-2" />
+                    List Property
+                  </Link>
+                )}
+
+                {userDashboard && (
+                  <Link to={userDashboard.path} className="mobile-nav-link">
+                    <Building className="w-5 h-5 mr-2" />
+                    {userDashboard.label}
+                  </Link>
+                )}
+
+                <button
+                  onClick={handleLogout}
+                  className="mobile-nav-link w-full text-left text-red-600 hover:bg-red-50"
+                >
+                  <LogOut className="w-5 h-5 mr-2" />
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="pt-4 border-t border-gray-200 space-y-2">
+                <Link to="/login" className="mobile-nav-link">
+                  Login
+                </Link>
+                <Link to="/register" className="mobile-nav-link bg-primary text-white hover:bg-primary-dark">
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </nav>
     </header>
   );
 };
-
-// Add these utility classes to your main CSS file (e.g., index.css) under @layer components
-/*
-.nav-link {
-  @apply px-3 py-2 rounded-md text-sm font-medium text-text-secondary hover:bg-gray-100 hover:text-primary transition-colors flex items-center;
-}
-.nav-link.active {
-  @apply bg-gray-100 text-primary;
-}
-.dropdown-link {
-  @apply block px-4 py-2 text-sm text-text-secondary hover:bg-gray-100 hover:text-primary transition-colors;
-}
-.mobile-nav-link {
-  @apply block px-3 py-2 rounded-md text-base font-medium text-text-primary hover:bg-gray-100 transition-colors flex items-center;
-}
-*/
 
 export default Header;

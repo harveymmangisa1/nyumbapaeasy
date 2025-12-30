@@ -68,7 +68,12 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-semibold tracking-tight;
   }
 
@@ -94,6 +99,7 @@
 }
 
 @layer components {
+
   /* Button components following shadcn/ui patterns */
   .btn {
     @apply inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
@@ -162,19 +168,27 @@
   .nav-link {
     @apply px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors flex items-center;
   }
+
   .nav-link.active {
     @apply bg-accent text-accent-foreground;
   }
+
   .dropdown-link {
     @apply block px-4 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors;
   }
+
   .mobile-nav-link {
-    @apply block px-3 py-2 rounded-md text-base font-medium text-foreground hover:bg-accent transition-colors flex items-center;
+    @apply block px-4 py-3.5 rounded-xl text-base font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-all flex items-center;
+  }
+
+  .mobile-nav-link.active {
+    @apply bg-primary/5 text-primary;
   }
 
   /* Ensure main content clears the fixed header height on small screens */
   .with-fixed-header {
-    padding-top: 4rem; /* header is h-16 */
+    padding-top: 4rem;
+    /* header is h-16 */
   }
 
   /* Property card hover effects */

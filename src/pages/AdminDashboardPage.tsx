@@ -13,7 +13,7 @@ import {
   BarChart3,
   Eye
 } from 'lucide-react';
-import { analyticsService } from '../services/analyticsService';
+
 
 interface UserData {
   id: string;
@@ -31,6 +31,8 @@ interface PropertyData {
   created_at: string;
   is_featured: boolean;
   views?: number;
+  landlord_id?: string;
+  landlord_name?: string;
 }
 
 interface DocumentData {
@@ -58,7 +60,7 @@ const AdminDashboardPage: React.FC = () => {
   const [recentUsers, setRecentUsers] = useState<UserData[]>([]);
   const [recentProperties, setRecentProperties] = useState<PropertyData[]>([]);
   const [pendingDocuments, setPendingDocuments] = useState<DocumentData[]>([]);
-  const [popularProperties, setPopularProperties] = useState<PropertyData[]>([]);
+const [popularProperties, setPopularProperties] = useState<PropertyData[]>([]);
   const [totalViews, setTotalViews] = useState(0);
 
   // Fetch dashboard data
@@ -69,16 +71,14 @@ const AdminDashboardPage: React.FC = () => {
       setLoading(true);
       try {
         // Fetch stats
-        const [{ count: usersCount }, { count: propertiesCount }, { count: inquiriesCount }, { count: verificationsCount }] = await Promise.all([
+const [{ count: usersCount }, { count: propertiesCount }, { count: verificationsCount }] = await Promise.all([
           supabase.from('profiles').select('*', { count: 'exact', head: true }),
           supabase.from('properties').select('*', { count: 'exact', head: true }),
-          supabase.from('inquiries').select('*', { count: 'exact', head: true }),
           supabase.from('verification_documents').select('*', { count: 'exact', head: true }).eq('status', 'pending')
         ]);
         
-        setTotalUsers(usersCount || 0);
+setTotalUsers(usersCount || 0);
         setTotalProperties(propertiesCount || 0);
-        setTotalInquiries(inquiriesCount || 0);
         setPendingVerifications(verificationsCount || 0);
         
         // Fetch role counts
@@ -143,9 +143,13 @@ const AdminDashboardPage: React.FC = () => {
           setPendingDocuments(documentsData as DocumentData[]);
         }
         
-        // Fetch popular properties
-        const { properties: popularProps, error: popularError } = await analyticsService.getPopularPropertiesAdmin();
-        if (!popularError) {
+// Fetch popular properties
+        const { data: popularProps, error: popularError } = await supabase
+          .from('properties')
+          .select('*')
+          .order('views', { ascending: false })
+          .limit(5);
+        if (!popularError && popularProps) {
           setPopularProperties(popularProps);
         }
         
@@ -197,7 +201,7 @@ const AdminDashboardPage: React.FC = () => {
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {user.name}. Here's what's happening today.</p>
+          <p className="text-gray-600">Welcome back, {user?.profile?.name || user?.email}. Here's what's happening today.</p>
         </div>
 
         {/* Stats Grid */}
@@ -272,7 +276,7 @@ const AdminDashboardPage: React.FC = () => {
                     <div className="text-lg font-bold text-gray-400 w-8">#{index + 1}</div>
                     <div className="ml-4">
                       <p className="font-medium text-gray-800">{property.title}</p>
-                      <p className="text-sm text-gray-500">Landlord: {property.landlord_name}</p>
+                      <p className="text-sm text-gray-500">Landlord: {property.landlord_name || 'Unknown'}</p>
                     </div>
                   </div>
                   <div className="flex items-center">
@@ -308,8 +312,8 @@ const AdminDashboardPage: React.FC = () => {
                         <p className="text-sm text-gray-500">{user.email}</p>
                       </div>
                       <div className="text-right">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize bg-gray-100 text-gray-800">
-                          {user.profile?.role}
+<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize bg-gray-100 text-gray-800">
+                          {user.role}
                         </span>
                         <p className="text-xs text-gray-500 mt-1">
                           {new Date(user.created_at).toLocaleDateString()}
@@ -419,8 +423,8 @@ const AdminDashboardPage: React.FC = () => {
                 <span className="text-sm font-medium text-gray-800">View Properties</span>
                 <span className="text-xs text-gray-500 mt-1">{totalProperties} total</span>
               </Link>
-              <Link 
-                to="/users" 
+<Link 
+                to="/admin/verification" 
                 className="flex flex-col items-center justify-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <Users className="h-8 w-8 text-purple-600 mb-2" />

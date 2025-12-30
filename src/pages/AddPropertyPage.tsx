@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Home, MapPin, Bed, Bath, Maximize, User, Phone, Mail, Check, X, Upload, AlertCircle, CheckCircle2, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+import { useToast } from '../context/ToastContext';
 
 const AddPropertyPage = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 5;
 
@@ -184,18 +187,55 @@ const AddPropertyPage = () => {
     setCurrentStep(Math.max(currentStep - 1, 1));
   };
 
-  const handleSubmit = () => {
+const handleSubmit = async () => {
     if (validateStep(currentStep)) {
-      console.log('Form submitted', {
-        propertyCategory,
-        listingType, propertyType, title, description, price,
-        district, area, sector, specificLocation,
-        bedrooms, bathrooms, squareMeters,
-        features: { isSelfContained, isFurnished, hasParking },
-        amenities: selectedAmenities,
-        landlordInfo: { landlordName, landlordPhone, landlordEmail },
-      });
-      alert('Property added successfully!');
+      try {
+        const { error } = await supabase
+          .from('properties')
+          .insert([
+            {
+              title,
+              description,
+              price,
+              currency: 'TZS',
+              location: specificLocation,
+              district,
+              area,
+              sector,
+              listing_type: listingType,
+              property_type: propertyType,
+              category: propertyCategory,
+              bedrooms,
+              bathrooms,
+              square_meters: squareMeters,
+              is_self_contained: isSelfContained,
+              is_furnished: isFurnished,
+              has_parking: hasParking,
+              amenities: selectedAmenities,
+              landlord_name: landlordName,
+              landlord_phone: landlordPhone,
+              landlord_email: landlordEmail,
+              landlord_id: user?.id,
+              status: 'available',
+              is_verified: false,
+            },
+          ])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error adding property:', error);
+          showToast('Failed to add property. Please try again.', 'error');
+          return;
+        }
+
+        // Reset form or redirect
+        showToast('Property added successfully!', 'success');
+        window.location.href = '/dashboard';
+      } catch (error) {
+        console.error('Error submitting property:', error);
+        alert('Failed to add property. Please try again.');
+      }
     }
   };
 

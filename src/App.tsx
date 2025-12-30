@@ -23,6 +23,7 @@ import WelcomePage from './pages/WelcomePage';
 import AuthCallbackPage from './pages/AuthCallbackPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import { AuthProvider } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 
 import AnalyticsPage from './pages/AnalyticsPage';
 // Policy pages
@@ -39,10 +40,11 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <PropertyProvider>
-          <div className="flex flex-col min-h-screen bg-background with-fixed-header">
-            <Header />
-            <main className="flex-grow">
+        <ToastProvider>
+          <PropertyProvider>
+            <div className="flex flex-col min-h-screen bg-background with-fixed-header">
+              <Header />
+              <main className="flex-grow">
               <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<HomePage />} />
@@ -92,10 +94,11 @@ function App() {
                 {/* 404 catch-all route */}
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
-            </main>
-            <Footer />
-          </div>
-        </PropertyProvider>
+</main>
+              <Footer />
+            </div>
+          </PropertyProvider>
+        </ToastProvider>
       </AuthProvider>
     </Router>
   );

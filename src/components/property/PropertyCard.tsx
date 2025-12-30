@@ -1,13 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Bed, Bath, Square, Heart, BadgeCheck, Star } from 'lucide-react';
 import { Property } from '../../context/PropertyContext';
+import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
+import { useToast } from '../../context/ToastContext';
 
 interface PropertyCardProps {
   property: Property;
 }
 
 const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  const [saved, setSaved] = useState(false);
+
   const imageUrl = property.images && property.images.length > 0 
     ? property.images[0]
     : 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80';
@@ -19,7 +26,28 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
     return diff < 1000 * 60 * 60 * 24 * 7; // 7 days
   })();
 
-  const [saved, setSaved] = useState(false);
+  // Check if property is saved on component mount
+  useEffect(() => {
+    const checkIfSaved = async () => {
+      if (!user) return;
+      
+      try {
+        const { data } = await supabase
+          .from('saved_properties')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('property_id', property.id)
+          .single();
+        
+        setSaved(!!data);
+      } catch (error) {
+        // Property not saved
+        setSaved(false);
+      }
+    };
+
+    checkIfSaved();
+  }, [user, property.id]);
 
   const getModeBadge = (listingType: string) => {
     switch (listingType) {
@@ -29,6 +57,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
         return { text: 'Short Stay', color: 'bg-amber-500' };
       case 'buy':
         return { text: 'Buy', color: 'bg-emerald-500' };
+      case 'sale':
+        return { text: 'Sale', color: 'bg-emerald-500' };
       case 'scale':
         return { text: 'Commercial', color: 'bg-purple-500' };
       default:
@@ -66,7 +96,10 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
 
         {/* Save button */}
         <button
-          onClick={(e) => { e.preventDefault(); setSaved(s => !s); }}
+          onClick={(e) => { 
+            e.preventDefault(); 
+            setSaved(s => !s); 
+          }}
           className={`absolute top-3 right-3 h-8 w-8 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors ${saved ? 'bg-red-500/90 text-white' : 'bg-white/80 hover:bg-white'}`}
           aria-label={saved ? 'Remove from saved' : 'Save property'}
         >
@@ -90,7 +123,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
           <div className="text-xl font-bold text-slate-800">
             MK {property.price.toLocaleString()}
             <span className="text-sm font-normal text-slate-500 ml-1">
-              {property.listing_type === 'rent' ? '/mo' : property.listing_type === 'short_stay' ? '/night' : ''}
+              {property.listing_type === 'rent' ? '/mo' : property.listing_type === 'short_stay' || property.listing_type === 'sale' ? '/night' : ''}
             </span>
           </div>
           {(property as any).rating && (

@@ -197,43 +197,54 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    console.log('Attempting signIn for:', email);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
+      console.error('Supabase signInWithPassword error:', error);
       throw error;
     }
+    console.log('SignIn successful:', data.user?.id);
   };
 
   const logout = async () => {
+    console.log('Starting logout process...');
     try {
       // Sign out from Supabase first
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Supabase signOut error:', error);
-        // Continue with local state cleanup even if Supabase signOut fails
+      } else {
+        console.log('Supabase signOut successful');
       }
 
       // Clear all auth state
       setUser(null);
       setSession(null);
+      console.log('Local auth state cleared');
 
-      // Clear any local storage items if needed
+      // Clear any local storage items
       localStorage.removeItem('supabase.auth.token');
       localStorage.removeItem('supabase.auth.refreshToken');
 
     } catch (error) {
-      console.error('Logout error:', error);
-      // Ensure state is cleared even if signOut fails
+      console.error('Logout error exception:', error);
+      // Ensure state is cleared even if exception occurs
       setUser(null);
       setSession(null);
-      // Don't throw error to prevent UI issues
+    } finally {
+      setLoading(false);
+      console.log('Logout process complete');
     }
   };
 
   const sendOtp = async (email: string) => {
-    const { error } = await supabase.auth.signInWithOtp({ email });
+    console.log('Attempting sendOtp for:', email);
+    const { data, error } = await supabase.auth.signInWithOtp({ email });
     if (error) {
+      console.error('Supabase signInWithOtp error:', error);
       throw error;
     }
+    console.log('OTP request successful:', data);
   };
 
   // If you use magic links instead of numeric OTP codes, do not call verifyOtp on client.

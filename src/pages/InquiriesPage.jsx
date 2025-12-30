@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useUser } from '../context/UserContext';
+import { useAuth } from '../context/AuthContext';
 
-const InquiriesPage: React.FC = () => {
-  const { user } = useUser();
+const InquiriesPage = () => {
+  const { user } = useAuth();
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -11,16 +11,17 @@ const InquiriesPage: React.FC = () => {
     const fetchInquiries = async () => {
       setLoading(true);
       try {
-        const q = query(
-          collection(db, 'inquiries'),
-          where('landlordId', '==', user?.id)
-        );
-        const querySnapshot = await getDocs(q);
-        const inquiriesData = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setInquiries(inquiriesData);
+        const { data, error } = await supabase
+          .from('inquiries')
+          .select('*')
+          .eq('landlord_id', user?.id)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching inquiries:', error);
+        } else {
+          setInquiries(data || []);
+        }
       } catch (error) {
         console.error('Error fetching inquiries:', error);
       } finally {

@@ -160,7 +160,13 @@ const HomePage: React.FC = () => {
               <p className="text-text-secondary max-w-md mx-auto mb-8">
                 We're adding new properties every day. Check back soon or subscribe to get notified.
               </p>
-              <button className="px-6 py-3 bg-accent text-white rounded-xl hover:bg-accent/90 transition-colors font-semibold">
+<button 
+                onClick={() => {
+                  // Navigate to registration page for property notifications
+                  window.location.href = '/register?notify=true';
+                }}
+                className="px-6 py-3 bg-accent text-white rounded-xl hover:bg-accent/90 transition-colors font-semibold"
+              >
                 Get Notified
               </button>
             </div>
@@ -278,8 +284,8 @@ const HomePage: React.FC = () => {
                     <Plus className="h-5 w-5" />
                     List Your Property
                   </Link>
-                  <Link
-                    to="/landlord-guide"
+<Link
+                    to="/about"
                     className="group inline-flex items-center justify-center gap-2 bg-transparent hover:bg-white/10 text-white border-2 border-white/30 px-8 py-4 rounded-xl font-semibold transition-all duration-300"
                   >
                     Learn More

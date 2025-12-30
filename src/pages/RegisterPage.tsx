@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import {
   Eye, EyeOff, User, Mail, Lock, Building2,
   FileText, Briefcase, AlertCircle, CheckCircle2,
-  Shield, BadgeAlert, ArrowRight, Home, Key, Hotel, BedDouble
+  Shield, ArrowRight, Home, Key, Hotel, BedDouble
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import FileUploadBox from '../components/FileUploadBox';
+import { useToast } from '../context/ToastContext';
 
 
 interface PasswordValidation {
@@ -30,6 +31,7 @@ interface VerificationState {
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -231,9 +233,9 @@ const RegisterPage = () => {
 
     setIsLoading(true);
 
-    try {
-      // Send numeric OTP to email and store profile metadata
-      const { error } = await supabase.auth.signInWithOtp({
+try {
+      // Try OTP registration first
+      const { error: otpError } = await supabase.auth.signInWithOtp({
         email: formData.email,
         options: {
           shouldCreateUser: true,
@@ -253,21 +255,66 @@ const RegisterPage = () => {
         },
       });
 
-      if (error) {
-        if (error.message.includes('already registered') || error.message.includes('exists')) {
-          setEmailExists(true);
-          setError('An account with this email already exists. Please log in or use a different email.');
-        } else {
-          setError(error.message);
-        }
-        setIsLoading(false);
-        return;
-      }
+      if (otpError) {
+        console.error('OTP Error:', otpError);
+        
+        // If OTP fails, try direct signup as fallback
+        if (otpError.message.includes('500') || otpError.message.includes('Internal Server Error')) {
+          console.log('OTP failed, trying direct signup...');
+          
+          const { error: signupError } = await supabase.auth.signUp({
+            email: formData.email,
+            password: formData.password,
+            options: {
+              data: {
+                name: formData.name,
+                role,
+                phone_number: formData.phoneNumber,
+                ...((role === 'landlord' || role === 'bnb_owner') && !skipVerification && {
+                  national_id: verification.nationalId,
+                }),
+                ...((role === 'real_estate_agency' || role === 'lodge_owner') && !skipVerification && {
+                  business_registration_number: verification.businessRegistrationNumber,
+                  license_number: verification.licenseNumber,
+                  manager_names: verification.managerNames,
+                }),
+              },
+            },
+          });
 
-      navigate('/verify-email', { state: { email: formData.email, role } });
+          if (signupError) {
+            if (signupError.message.includes('already registered') || signupError.message.includes('exists')) {
+              setEmailExists(true);
+              setError('An account with this email already exists. Please log in or use a different email.');
+            } else {
+              setError(signupError.message);
+            }
+            setIsLoading(false);
+            return;
+          }
+
+          // Direct signup successful
+          showToast('Registration successful! Please check your email to verify your account.', 'success');
+          navigate('/verify-email', { state: { email: formData.email, role } });
+        } else {
+          // Other OTP errors
+          if (otpError.message.includes('already registered') || otpError.message.includes('exists')) {
+            setEmailExists(true);
+            setError('An account with this email already exists. Please log in or use a different email.');
+          } else {
+            setError(otpError.message);
+          }
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        // OTP successful
+        navigate('/verify-email', { state: { email: formData.email, role } });
+      }
     } catch (err) {
       console.error('Registration error:', err);
-      setError('An unexpected error occurred during registration.');
+      setError('Registration service is temporarily unavailable. Please try again in a few minutes or contact support if the issue persists.');
+      showToast('Registration temporarily unavailable. Please try again later.', 'error');
     } finally {
       setIsLoading(false);
     }
