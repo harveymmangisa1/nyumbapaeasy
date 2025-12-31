@@ -7,13 +7,13 @@ const VerifyEmailPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const email = location.state?.email || '';
-  
-  const [code, setCode] = useState(['', '', '', '', '', '']);
+
+  const [code, setCode] = useState(['', '', '', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [resending, setResending] = useState(false);
-  
+
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ const VerifyEmailPage = () => {
     newCode[index] = value;
     setCode(newCode);
 
-    if (value && index < 5) {
+    if (value && index < 7) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -46,21 +46,21 @@ const VerifyEmailPage = () => {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').slice(0, 6);
+    const pastedData = e.clipboardData.getData('text').slice(0, 8);
     if (!/^\d+$/.test(pastedData)) return;
 
     const newCode = pastedData.split('');
-    while (newCode.length < 6) newCode.push('');
+    while (newCode.length < 8) newCode.push('');
     setCode(newCode);
-    inputRefs.current[Math.min(pastedData.length, 5)]?.focus();
+    inputRefs.current[Math.min(pastedData.length, 7)]?.focus();
   };
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     const otp = code.join('');
-    
-    if (otp.length !== 6) {
-      setError('Please enter the complete 6-digit code');
+
+    if (otp.length !== 8) {
+      setError('Please enter the complete 8-digit code');
       return;
     }
 
@@ -84,7 +84,7 @@ const VerifyEmailPage = () => {
       }, 800);
     } catch (err: any) {
       setError(err.message || 'Invalid or expired code. Please try again.');
-      setCode(['', '', '', '', '', '']);
+      setCode(['', '', '', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
     } finally {
       setLoading(false);
@@ -121,7 +121,7 @@ const VerifyEmailPage = () => {
             </div>
             <h1 className="text-3xl font-bold text-slate-900 mb-2">Verify Your Email</h1>
             <p className="text-slate-600">
-              We sent a 6-digit code to<br />
+              We sent an 8-digit code to<br />
               <span className="font-semibold text-slate-900">{email}</span>
             </p>
           </div>
@@ -142,7 +142,7 @@ const VerifyEmailPage = () => {
                     value={digit}
                     onChange={(e) => handleChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
-                    className="w-12 h-14 text-center text-2xl font-bold border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                    className="w-10 h-14 text-center text-2xl font-bold border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                     disabled={loading || success}
                   />
                 ))}
@@ -169,7 +169,7 @@ const VerifyEmailPage = () => {
 
             <button
               type="submit"
-              disabled={loading || success || code.join('').length !== 6}
+              disabled={loading || success || code.join('').length !== 8}
               className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
