@@ -18,14 +18,14 @@ const AddPropertyPage = () => {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [paymentCycle, setPaymentCycle] = useState('monthly');
-  
+
   // Location
   const [district, setDistrict] = useState('');
   const [area, setArea] = useState('');
   const [sector, setSector] = useState('');
   const [specificLocation, setSpecificLocation] = useState('');
   const [nearbyLandmarks, setNearbyLandmarks] = useState('');
-  
+
   // Property details
   const [bedrooms, setBedrooms] = useState('');
   const [bathrooms, setBathrooms] = useState('');
@@ -33,7 +33,7 @@ const AddPropertyPage = () => {
   const [yearBuilt, setYearBuilt] = useState('');
   const [parkingSpaces, setParkingSpaces] = useState('');
   const [floors, setFloors] = useState('');
-  
+
   // Features
   const [isSelfContained, setIsSelfContained] = useState(false);
   const [isFurnished, setIsFurnished] = useState(false);
@@ -44,31 +44,32 @@ const AddPropertyPage = () => {
   const [hasAirConditioning, setHasAirConditioning] = useState(false);
   const [hasInternet, setHasInternet] = useState(false);
   const [hasWaterSupply, setHasWaterSupply] = useState(false);
-  
+
   // Additional amenities
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [customAmenity, setCustomAmenity] = useState('');
-  
+
   // Images
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [additionalImages, setAdditionalImages] = useState<File[]>([]);
-  
+
   // Landlord info
   const [landlordName, setLandlordName] = useState('');
   const [landlordPhone, setLandlordPhone] = useState('');
   const [landlordEmail, setLandlordEmail] = useState('');
   const [preferredContact, setPreferredContact] = useState('phone');
-  
+
   // Availability
   const [availableFrom, setAvailableFrom] = useState('');
   const [minimumLeaseTerm, setMinimumLeaseTerm] = useState('');
   const [petPolicy, setPetPolicy] = useState('not_allowed');
   const [smokingPolicy, setSmokingPolicy] = useState('not_allowed');
-  
+
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const canAddProperty = user?.profile.is_verified || user?.profile.role === 'real_estate_agency';
-  const isUnverifiedAgency = user?.profile.role === 'real_estate_agency' && !user?.profile.is_verified;
+  const listingRoles = ['landlord', 'real_estate_agency', 'lodge_owner', 'bnb_owner', 'admin'];
+  const canAddProperty = user && listingRoles.includes(user.profile.role);
+  const isUnverified = canAddProperty && !user?.profile.is_verified;
 
   if (!canAddProperty) {
     return (
@@ -140,7 +141,7 @@ const AddPropertyPage = () => {
 
   const validateStep = (step: number) => {
     const newErrors: Record<string, string> = {};
-    
+
     if (step === 1) {
       if (!propertyCategory) newErrors.propertyCategory = 'Please select property category';
       if (!listingType) newErrors.listingType = 'Please select listing type';
@@ -151,28 +152,28 @@ const AddPropertyPage = () => {
       if (description.trim().length < 50) newErrors.description = 'Description must be at least 50 characters';
       if (!price || Number(price) <= 0) newErrors.price = 'Valid price is required';
     }
-    
+
     if (step === 2) {
       if (!district) newErrors.district = 'District is required';
       if (!area) newErrors.area = 'Area is required';
       if (!specificLocation.trim()) newErrors.specificLocation = 'Specific location is required';
     }
-    
+
     if (step === 3) {
       if (!bedrooms || Number(bedrooms) < 0) newErrors.bedrooms = 'Valid number of bedrooms required';
       if (!bathrooms || Number(bathrooms) < 0) newErrors.bathrooms = 'Valid number of bathrooms required';
     }
-    
+
     if (step === 4) {
       if (!coverImage) newErrors.coverImage = 'Cover image is required';
     }
-    
+
     if (step === 5) {
       if (!landlordName.trim()) newErrors.landlordName = 'Landlord name is required';
       if (!landlordPhone.trim()) newErrors.landlordPhone = 'Phone number is required';
       if (!availableFrom) newErrors.availableFrom = 'Availability date is required';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -187,7 +188,7 @@ const AddPropertyPage = () => {
     setCurrentStep(Math.max(currentStep - 1, 1));
   };
 
-const handleSubmit = async () => {
+  const handleSubmit = async () => {
     if (validateStep(currentStep)) {
       try {
         const { error } = await supabase
@@ -244,17 +245,15 @@ const handleSubmit = async () => {
       <div className="flex items-center justify-between mb-2">
         {[1, 2, 3, 4, 5].map((step) => (
           <div key={step} className="flex items-center">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-medium transition-all ${
-              currentStep > step ? 'bg-emerald-600 text-white' :
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-medium transition-all ${currentStep > step ? 'bg-emerald-600 text-white' :
               currentStep === step ? 'bg-emerald-600 text-white ring-4 ring-emerald-100' :
-              'bg-slate-200 text-slate-600'
-            }`}>
+                'bg-slate-200 text-slate-600'
+              }`}>
               {currentStep > step ? <Check className="h-5 w-5" /> : step}
             </div>
             {step < 5 && (
-              <div className={`h-1 w-12 md:w-24 mx-2 transition-all ${
-                currentStep > step ? 'bg-emerald-600' : 'bg-slate-200'
-              }`} />
+              <div className={`h-1 w-12 md:w-24 mx-2 transition-all ${currentStep > step ? 'bg-emerald-600' : 'bg-slate-200'
+                }`} />
             )}
           </div>
         ))}
@@ -281,20 +280,20 @@ const handleSubmit = async () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-4">
       <div className="container mx-auto max-w-4xl">
-          <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-8 py-6">
-              <h1 className="text-2xl md:text-3xl font-semibold text-white mb-2">List Your Property</h1>
-              <p className="text-emerald-100">Fill in the details to get your property listed</p>
-              {isUnverifiedAgency && (
-                <div className="mt-3 bg-yellow-400/20 border border-yellow-400/30 rounded-lg px-3 py-2">
-                  <p className="text-yellow-100 text-sm">
-                    <AlertCircle className="inline h-4 w-4 mr-1" />
-                    Your agency is not yet verified. Properties will be marked as "Unverified" until verification is complete.
-                  </p>
-                </div>
-              )}
-            </div>
+        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-8 py-6">
+            <h1 className="text-2xl md:text-3xl font-semibold text-white mb-2">List Your Property</h1>
+            <p className="text-emerald-100">Fill in the details to get your property listed</p>
+            {isUnverified && (
+              <div className="mt-3 bg-yellow-400/20 border border-yellow-400/30 rounded-lg px-3 py-2">
+                <p className="text-yellow-100 text-sm">
+                  <AlertCircle className="inline h-4 w-4 mr-1" />
+                  Your account is not yet verified. Properties will be marked as "Unverified" until verification is complete.
+                </p>
+              </div>
+            )}
+          </div>
 
           <div className="p-8">
             <ProgressBar />
@@ -315,11 +314,10 @@ const handleSubmit = async () => {
                         key={category}
                         type="button"
                         onClick={() => setPropertyCategory(category)}
-                        className={`p-4 rounded-xl border-2 transition-all ${
-                          propertyCategory === category
-                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                            : 'border-slate-200 hover:border-slate-300'
-                        }`}
+                        className={`p-4 rounded-xl border-2 transition-all ${propertyCategory === category
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                          : 'border-slate-200 hover:border-slate-300'
+                          }`}
                       >
                         <span className="font-medium capitalize">{category}</span>
                       </button>
@@ -339,11 +337,10 @@ const handleSubmit = async () => {
                         key={type}
                         type="button"
                         onClick={() => setListingType(type)}
-                        className={`p-4 rounded-xl border-2 transition-all ${
-                          listingType === type
-                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                            : 'border-slate-200 hover:border-slate-300'
-                        }`}
+                        className={`p-4 rounded-xl border-2 transition-all ${listingType === type
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                          : 'border-slate-200 hover:border-slate-300'
+                          }`}
                       >
                         <span className="font-medium capitalize">{type === 'rent' ? 'Rent Out' : 'Sell'}</span>
                       </button>
@@ -360,15 +357,15 @@ const handleSubmit = async () => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {(propertyCategory === 'residential'
                       ? [
-                          { value: 'house', label: 'House', icon: Home },
-                          { value: 'apartment', label: 'Apartment', icon: Home },
-                          { value: 'room', label: 'Room', icon: Bed },
-                        ]
+                        { value: 'house', label: 'House', icon: Home },
+                        { value: 'apartment', label: 'Apartment', icon: Home },
+                        { value: 'room', label: 'Room', icon: Bed },
+                      ]
                       : [
-                          { value: 'hotel', label: 'Hotel', icon: Home },
-                          { value: 'lodge', label: 'Lodge', icon: Home },
-                          { value: 'shop', label: 'Shop', icon: Home },
-                        ]
+                        { value: 'hotel', label: 'Hotel', icon: Home },
+                        { value: 'lodge', label: 'Lodge', icon: Home },
+                        { value: 'shop', label: 'Shop', icon: Home },
+                      ]
                     ).map((type) => {
                       const Icon = type.icon;
                       return (
@@ -376,11 +373,10 @@ const handleSubmit = async () => {
                           key={type.value}
                           type="button"
                           onClick={() => setPropertyType(type.value)}
-                          className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                            propertyType === type.value
-                              ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                              : 'border-slate-200 hover:border-slate-300'
-                          }`}
+                          className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${propertyType === type.value
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                            : 'border-slate-200 hover:border-slate-300'
+                            }`}
                         >
                           <Icon className="h-6 w-6" />
                           <span className="text-sm font-medium">{type.label}</span>
@@ -697,16 +693,15 @@ const handleSubmit = async () => {
                       <button
                         key={amenity}
                         type="button"
-                        onClick={() => 
-                          selectedAmenities.includes(amenity) 
+                        onClick={() =>
+                          selectedAmenities.includes(amenity)
                             ? handleRemoveAmenity(amenity)
                             : handleAddAmenity(amenity)
                         }
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                          selectedAmenities.includes(amenity)
-                            ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-500'
-                            : 'bg-slate-100 text-slate-700 border-2 border-transparent hover:border-slate-300'
-                        }`}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedAmenities.includes(amenity)
+                          ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-500'
+                          : 'bg-slate-100 text-slate-700 border-2 border-transparent hover:border-slate-300'
+                          }`}
                       >
                         {selectedAmenities.includes(amenity) && <Check className="inline h-4 w-4 mr-1" />}
                         {amenity}
@@ -745,7 +740,7 @@ const handleSubmit = async () => {
                     Cover Image <span className="text-red-500">*</span>
                   </label>
                   <p className="text-sm text-slate-600 mb-3">This will be the main image for your property listing</p>
-                  
+
                   {!coverImage ? (
                     <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-all bg-slate-50">
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -788,7 +783,7 @@ const handleSubmit = async () => {
                     Additional Images (Optional)
                   </label>
                   <p className="text-sm text-slate-600 mb-3">Add up to 9 more photos (Total: {additionalImages.length + 1}/10)</p>
-                  
+
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {additionalImages.map((img, idx) => (
                       <div key={idx} className="relative group">
@@ -806,7 +801,7 @@ const handleSubmit = async () => {
                         </button>
                       </div>
                     ))}
-                    
+
                     {additionalImages.length < 9 && (
                       <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-all">
                         <Upload className="h-8 w-8 text-slate-400 mb-1" />
@@ -848,7 +843,7 @@ const handleSubmit = async () => {
                 {/* Landlord Info */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium text-slate-900 uppercase tracking-wider">Contact Information</h3>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">
                       Full Name <span className="text-red-500">*</span>
@@ -911,11 +906,10 @@ const handleSubmit = async () => {
                           key={method}
                           type="button"
                           onClick={() => setPreferredContact(method)}
-                          className={`p-3 rounded-xl border-2 transition-all ${
-                            preferredContact === method
-                              ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                              : 'border-slate-200 hover:border-slate-300'
-                          }`}
+                          className={`p-3 rounded-xl border-2 transition-all ${preferredContact === method
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                            : 'border-slate-200 hover:border-slate-300'
+                            }`}
                         >
                           <span className="font-medium capitalize">{method}</span>
                         </button>
@@ -927,7 +921,7 @@ const handleSubmit = async () => {
                 {/* Availability */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium text-slate-900 uppercase tracking-wider">Availability Details</h3>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">

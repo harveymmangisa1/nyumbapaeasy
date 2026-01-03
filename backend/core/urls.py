@@ -16,8 +16,20 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.http import JsonResponse
+
+def root_view(request):
+    return JsonResponse({
+        "status": "online",
+        "message": "NyumbaPaEasy Backend API is running",
+        "endpoints": {
+            "admin": "/admin/",
+            "properties": "/api/properties/"
+        }
+    })
 
 urlpatterns = [
+    path('', root_view),
     path('admin/', admin.site.urls),
     path('api/properties/', include('properties.urls')),
 ]

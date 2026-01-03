@@ -10,7 +10,8 @@ const VerifyEmailPage = () => {
 
   const [code, setCode] = useState(['', '', '', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] =
+    useState('');
   const [success, setSuccess] = useState(false);
   const [resending, setResending] = useState(false);
 

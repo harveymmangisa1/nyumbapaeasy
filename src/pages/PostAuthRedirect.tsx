@@ -63,9 +63,9 @@ const PostAuthRedirect = () => {
     const metadataRole = (user?.user_metadata?.role || user?.app_metadata?.role) as string | undefined;
     const role = user.profile?.role || metadataRole;
 
+    const dashboardRoles = ['landlord', 'real_estate_agency', 'lodge_owner', 'bnb_owner'];
     if (role === 'admin') navigate('/admin/dashboard', { replace: true });
-    else if (role === 'real_estate_agency') navigate('/agency/dashboard', { replace: true });
-    else if (role === 'landlord') navigate('/dashboard', { replace: true });
+    else if (dashboardRoles.includes(role || '')) navigate('/dashboard', { replace: true });
     else navigate('/', { replace: true });
   }, [user, loading, navigate, location]);
 

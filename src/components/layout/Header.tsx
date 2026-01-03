@@ -88,7 +88,7 @@ const Header: React.FC = () => {
   };
 
   // Computed values
-  const canListProperty = user && ['landlord', 'admin', 'real_estate_agency'].includes(user.profile.role);
+  const canListProperty = user && ['landlord', 'admin', 'real_estate_agency', 'lodge_owner', 'bnb_owner'].includes(user.profile.role);
   const userDashboard = user ? ROLE_DASHBOARDS[user.profile.role as keyof typeof ROLE_DASHBOARDS] : null;
 
   // Verification Badge Component
